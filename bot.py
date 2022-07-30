@@ -142,8 +142,7 @@ async def _(message: Message, state: FSMContext):
     await state.update_data({"name": message.text})
 
     await state.set_state(Form.gender)
-    await message.answer("Choose your gender",
-                         reply_markup=GENDER)
+    await message.answer("Choose your gender", reply_markup=GENDER)
 
 
 @dp.message(commands="start")
