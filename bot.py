@@ -80,8 +80,7 @@ async def _(message: Message, state: FSMContext):
 
 
 RESUMES = InlineKeyboardBuilder().row(
-    InlineKeyboardButton(text="Jump to resumes",
-                         url=getenv("RESUMES"))
+    InlineKeyboardButton(text="Jump to resumes", url=getenv("RESUMES"))
 ).as_markup()
 
 
