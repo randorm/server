@@ -47,7 +47,6 @@ async def main(token: str, fsm: str):
             student = Student.parse_raw(data)
 
             chat, user = map(int, state_key.split(":")[1:-1])
-
             try:
                 await bot.send_message(
                     chat,
@@ -57,10 +56,7 @@ async def main(token: str, fsm: str):
                 )
                 await sleep(COOLDOWN)
             finally:
-                students |= {user: student.dict()}
-
-    with open("students.json", "w") as file:
-        file.write(dumps(students))
+                students |= {user: student}
 
 
 if __name__ == "__main__":
