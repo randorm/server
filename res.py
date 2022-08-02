@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from asyncio import sleep
+from contextlib import suppress
 from enum import Enum
 from json import dumps
 from os import getenv
@@ -11,8 +11,6 @@ from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from pydantic import BaseModel, ValidationError
-
-COOLDOWN = 3
 
 
 class Node(BaseModel):
@@ -36,36 +34,31 @@ async def main(token: str, redis_url: str):
     redis = aioredis.from_url(redis_url, decode_responses=True)
 
     students = {}
-    for state_key in await redis.keys("fsm:*:state"):
-        state = await redis.get(state_key)
-        if state == "Form:subscribe":
-            data_key = state_key.replace("state", "data")
-            data = await redis.get(data_key)
+    for key in await redis.keys("fsm:*:data"):
+        data = await redis.get(key)
 
-            try:
-                student = Student.parse_raw(data)
-            except ValidationError as error:
-                logging.warning(error)
-                continue
+        try:
+            student = Student.parse_raw(data)
+        except ValidationError as error:
+            logging.warning(error)
+            continue
 
-            chat, user = map(int, state_key.split(":")[1:-1])
-            try:
-                await bot.send_message(
-                    chat,
-                    f"{student.name}, the second phase has "
-                    "come to an end. We're glad you took part!",
-                    reply_markup=InlineKeyboardBuilder().row(
-                        InlineKeyboardButton(text="Support",
-                                             url="tg://user?id=709491996")
-                    ).as_markup()
-                )
-            except TelegramForbiddenError as error:
-                logging.warning(error)
-                continue
-            else:
-                students |= {user: student}
-            finally:
-                await sleep(COOLDOWN)
+        chat, user = key.split(":")[1:-1]
+
+        with suppress(TelegramForbiddenError):
+            await bot.send_message(
+                chat,
+                f"{student.name}, the second phase has "
+                "come to an end. We're glad you took part!",
+                reply_markup=InlineKeyboardBuilder().row(
+                    InlineKeyboardButton(
+                        text="Support",
+                        url="tg://user?id=709491996"
+                    )
+                ).as_markup()
+            )
+
+        students |= {user: student}
 
     with open("students.json", "w") as file:
         file.write(dumps(students))
