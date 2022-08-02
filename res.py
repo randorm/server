@@ -58,6 +58,9 @@ async def main(token: str, fsm: str):
             finally:
                 students |= {user: student}
 
+    with open("students.json", "w") as file:
+        file.write(dumps(students))
+
 
 if __name__ == "__main__":
     asyncio.run(main(getenv("TOKEN"), getenv("REDIS")))
