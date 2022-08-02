@@ -1,10 +1,12 @@
 import asyncio
+from contextlib import suppress
 from enum import Enum
 from json import dumps
 from os import getenv
 
 import aioredis
 from aiogram import Bot
+from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from pydantic import BaseModel, ValidationError
@@ -41,7 +43,7 @@ async def main(token: str, redis_url: str):
 
         chat_id, user_id = key.split(":")[1:-1]
 
-        try:
+        with suppress(TelegramForbiddenError):
             await bot.send_message(
                 chat_id,
                 f"{student.name}, the second phase has "
@@ -53,8 +55,8 @@ async def main(token: str, redis_url: str):
                     )
                 ).as_markup()
             )
-        finally:
-            students |= {user_id: student.dict()}
+
+        students |= {user_id: student.dict()}
 
     with open("students.json", "w") as file:
         file.write(dumps(students))
