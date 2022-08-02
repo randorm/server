@@ -58,7 +58,7 @@ async def main(token: str, redis_url: str):
                 ).as_markup()
             )
 
-        students |= {user: student}
+        students |= {user: student.dict()}
 
     with open("students.json", "w") as file:
         file.write(dumps(students))
