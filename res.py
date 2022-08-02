@@ -17,7 +17,7 @@ class Node(BaseModel):
     subscriptions: list[str]
 
 
-class Gender(str, Enum):
+class Gender(Enum):
     MALE = "male"
     FEMALE = "female"
 
