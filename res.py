@@ -40,12 +40,13 @@ async def main(token: str, fsm: str):
 
     students = {}
     for state_key in await redis.keys("fsm:*:state"):
-        chat, user = map(int, state_key.split(":")[1:-1])
-        if await redis.get(state_key) == "Form:subscribe":
+        state = await redis.get(state_key)
+        if state == "Form:subscribe":
             data_key = state_key.replace("state", "data")
-
             data = await redis.get(data_key)
             student = Student.parse_raw(data)
+
+            chat, user = map(int, state_key.split(":")[1:-1])
 
             try:
                 await bot.send_message(
