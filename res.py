@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from contextlib import suppress
 from enum import Enum
 from json import dumps
@@ -39,15 +38,14 @@ async def main(token: str, redis_url: str):
 
         try:
             student = Student.parse_raw(data)
-        except ValidationError as error:
-            logging.warning(error)
+        except ValidationError:
             continue
 
-        chat, user = key.split(":")[1:-1]
+        chat_id, user_id = key.split(":")[1:-1]
 
         with suppress(TelegramForbiddenError):
             await bot.send_message(
-                chat,
+                chat_id,
                 f"{student.name}, the second phase has "
                 "come to an end. We're glad you took part!",
                 reply_markup=InlineKeyboardBuilder().row(
@@ -58,7 +56,7 @@ async def main(token: str, redis_url: str):
                 ).as_markup()
             )
 
-        students |= {user: student.dict()}
+        students |= {user_id: student.dict()}
 
     with open("students.json", "w") as file:
         file.write(dumps(students))
