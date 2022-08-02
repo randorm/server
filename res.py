@@ -4,10 +4,10 @@ from enum import Enum
 from json import dumps
 from os import getenv
 
-import aioredis
 from aiogram import Bot
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aioredis import from_url
 from pydantic import BaseModel
 
 COOLDOWN = 3
@@ -34,9 +34,9 @@ SUPPORT = InlineKeyboardBuilder().row(
 ).as_markup()
 
 
-async def main(token: str, url: str):
+async def main(token: str, fsm: str):
     bot = Bot(token)
-    redis = aioredis.from_url(url, decode_responses=True)
+    redis = from_url(fsm, decode_responses=True)
 
     students = {}
     for state_key in await redis.keys("fsm:*:state"):
