@@ -45,8 +45,8 @@ async def main(token: str, fsm: str):
             try:
                 await bot.send_message(
                     chat,
-                    f"{student.name}, the second phase has come "
-                    "to an end. We're glad you took part!",
+                    f"{student.name}, the second phase has "
+                    "come to an end. We're glad you took part!",
                     reply_markup=InlineKeyboardBuilder().row(
                         InlineKeyboardButton(
                             text="Support",
