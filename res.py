@@ -29,11 +29,6 @@ class Student(Node):
     age: int
 
 
-SUPPORT = InlineKeyboardBuilder().row(
-    InlineKeyboardButton(text="Support", url=getenv("SUPPORT"))
-).as_markup()
-
-
 async def main(token: str, fsm: str):
     bot = Bot(token)
     redis = from_url(fsm, decode_responses=True)
@@ -52,7 +47,12 @@ async def main(token: str, fsm: str):
                     chat,
                     f"{student.name}, the second phase has come "
                     "to an end. We're glad you took part!",
-                    reply_markup=SUPPORT
+                    reply_markup=InlineKeyboardBuilder().row(
+                        InlineKeyboardButton(
+                            text="Support",
+                            url="tg://user?id=709491996"
+                        )
+                    ).as_markup()
                 )
                 await sleep(COOLDOWN)
             finally:
