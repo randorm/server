@@ -1,8 +1,7 @@
-The bot is designed to match incoming new students with their potential
-roommates and assign them to their rooms at the student residence. The bot uses
-a **tinder** like setup. To participate a student needs to fill out a form with
-some general questions about about their age, gender and their common shared
-living preferences. Once the student confirms their answers, they get access to
-all the other forms. They can _like_ or _dislike_ an applicant by forwarding the
-applicant's form to the bot. The algorithm assigns participants to the rooms
-based on their mutual agreement to share a room.
+The bot is designed for the efficient distribution of first-year students to
+rooms in the dormitory of Innopolis University. The allocation occurs in three
+phases. At the first phase, a channel is created in Telegram, where moderators
+send participants' resumes (the resume template is announced in advance by the
+organizers). In the second phase, participants register in the bot, and then
+send favorite resumes to the bot. In the third stage, the organizers process the
+data and announce the distribution results.
