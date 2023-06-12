@@ -1,15 +1,10 @@
 import { GraphQLError } from "../deps.ts";
-import type { ChoiceAnswerModel, FieldModel } from "../model/mod.ts";
-import { FieldTypeModel } from "../model/mod.ts";
+import type { ChoiceAnswerModel, ChoiceFieldModel } from "../model/mod.ts";
 
 export function assertChoiceAnswer(
   answer: ChoiceAnswerModel,
-  field: FieldModel,
+  field: ChoiceFieldModel,
 ) {
-  if (field.type !== FieldTypeModel.CHOICE) {
-    throw new GraphQLError(`Field with ID ${field.id} is not a choice field`);
-  }
-
   if (!answer.value.size) {
     throw new GraphQLError(`Answer for Field with ID ${field.id} is empty`);
   }

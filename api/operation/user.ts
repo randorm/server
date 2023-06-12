@@ -1,3 +1,4 @@
+import { assertProfile } from "../assert/mod.ts";
 import {
   GraphQLError,
   GraphQLInt,
@@ -11,7 +12,6 @@ import type { UserModel } from "../model/mod.ts";
 import { UserNode } from "../node/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Operation } from "../types.ts";
-import { assertProfile } from "../util/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -38,13 +38,12 @@ export const UserQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const countRes = await kv.get<Deno.KvU64>(["user_count"]);
 
+        // TODO(machnevegor): move responsibility to bot
         if (countRes.value === null) {
           const iter = kv.list<UserModel>({ prefix: ["user"] });
 
           let count = 0;
-          for await (const { key } of iter) {
-            if (key.length === 2) count++;
-          }
+          for await (const _ of iter) count++;
 
           const commitRes = await kv.atomic()
             .check(countRes)

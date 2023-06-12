@@ -15,6 +15,7 @@ export interface BaseFieldModel {
 export interface TextFieldModel extends BaseFieldModel {
   readonly type: FieldTypeModel.TEXT;
   readonly format: string | null;
+  readonly sample: string | null;
 }
 
 export interface ChoiceFieldModel extends BaseFieldModel {

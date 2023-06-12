@@ -1,4 +1,9 @@
 import {
+  assertChoiceField,
+  assertEditor,
+  assertTextField,
+} from "../assert/mod.ts";
+import {
   GraphQLBoolean,
   GraphQLError,
   GraphQLInt,
@@ -15,7 +20,6 @@ import type {
 import { FieldTypeModel } from "../model/mod.ts";
 import { FieldNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
-import { assertEditor } from "../util/mod.ts";
 
 export const FieldQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -78,8 +82,15 @@ export const FieldMutation: Operation = new GraphQLObjectType({
         format: {
           type: GraphQLString,
         },
+        sample: {
+          type: GraphQLString,
+        },
       },
-      async resolve(_root, { format = null, ...args }, { user, kv }) {
+      async resolve(
+        _root,
+        { format = null, sample = null, ...args },
+        { user, kv },
+      ) {
         assertEditor(user);
 
         const countRes = await kv.get<Deno.KvU64>(["field_count"]);
@@ -90,8 +101,11 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           creatorId: user.id,
           ...args,
           format,
+          sample,
           createdAt: new Date(),
         };
+
+        assertTextField(field);
 
         const commitRes = await kv.atomic()
           .check(countRes)
@@ -138,6 +152,8 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           ...args,
           createdAt: new Date(),
         };
+
+        assertChoiceField(field);
 
         const commitRes = await kv.atomic()
           .check(countRes)

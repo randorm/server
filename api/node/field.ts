@@ -86,6 +86,9 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
     format: {
       type: GraphQLString,
     },
+    sample: {
+      type: GraphQLString,
+    },
     answers: {
       type: new GraphQLNonNull(
         new GraphQLList(

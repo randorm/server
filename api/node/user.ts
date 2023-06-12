@@ -54,13 +54,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     views: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<UserModel>(["user", id, "views"]);
+        const res = await kv.get<Deno.KvU64>(["user:views", id]);
 
-        if (res.value === null) {
-          throw new GraphQLError(`Views of User with ID ${id} not found`);
-        }
-
-        return res.value;
+        return res.value === null ? 0 : Number(res.value);
       },
     },
     profile: {
@@ -69,15 +65,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     viewedCount: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Deno.KvU64>(["user", id, "viewed_count"]);
+        const res = await kv.get<Deno.KvU64>(["user:viewed_count", id]);
 
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Viewed count of User with ID ${id} not found`,
-          );
-        }
-
-        return Number(res.value);
+        return res.value === null ? 0 : Number(res.value);
       },
     },
     viewed: {
@@ -87,7 +77,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<UserModel>(["user", id, "viewed"]);
+        const res = await kv.get<Set<UserModel>>(["user:viewed", id]);
 
         if (res.value === null) {
           throw new GraphQLError(`Viewed of User with ID ${id} not found`);
@@ -99,19 +89,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     subscriptionCount: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Deno.KvU64>([
-          "user",
-          id,
-          "subscription_count",
-        ]);
+        const res = await kv.get<Deno.KvU64>(["user:subscription_count", id]);
 
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Subscription count of User with ID ${id} not found`,
-          );
-        }
-
-        return Number(res.value);
+        return res.value === null ? 0 : Number(res.value);
       },
     },
     subscriptions: {
@@ -121,7 +101,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<UserModel>(["user", id, "subscriptions"]);
+        const res = await kv.get<Set<UserModel>>(["user:subscriptions", id]);
 
         if (res.value === null) {
           throw new GraphQLError(
@@ -135,15 +115,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     subscriberCount: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Deno.KvU64>(["user", id, "subscriber_count"]);
+        const res = await kv.get<Deno.KvU64>(["user:subscriber_count", id]);
 
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Subscriber count of User with ID ${id} not found`,
-          );
-        }
-
-        return Number(res.value);
+        return res.value === null ? 0 : Number(res.value);
       },
     },
     subscribers: {
@@ -153,7 +127,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<UserModel>(["user", id, "subscribers"]);
+        const res = await kv.get<Set<UserModel>>(["user:subscribers", id]);
 
         if (res.value === null) {
           throw new GraphQLError(`Subscribers of User with ID ${id} not found`);
@@ -192,12 +166,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       async resolve({ fieldIds, id }, _args, { kv }) {
         const answers = [];
         for (const fieldId of fieldIds) {
-          const res = await kv.get<AnswerModel>([
-            "field",
-            fieldId,
-            "answer",
-            id,
-          ]);
+          const res = await kv.get<AnswerModel>(["answer", fieldId, id]);
 
           if (res.value === null) {
             throw new GraphQLError(
@@ -214,7 +183,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     room: {
       type: RoomNode,
       async resolve({ roomId }, _args, { kv }) {
-        if (!roomId) return null;
+        if (roomId === null) return null;
 
         const res = await kv.get<RoomModel>(["room", roomId]);
 

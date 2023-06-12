@@ -1,3 +1,4 @@
+import { assertEditor, assertRoom, assertRoomGroup } from "../assert/mod.ts";
 import {
   GraphQLError,
   GraphQLInt,
@@ -9,7 +10,6 @@ import {
 import type { RoomGroupModel, RoomModel } from "../model/mod.ts";
 import { RoomGroupNode, RoomNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
-import { assertEditor, assertRoom, assertRoomGroup } from "../util/mod.ts";
 
 export const RoomQuery: Operation = new GraphQLObjectType({
   name: "Query",
