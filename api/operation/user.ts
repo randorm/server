@@ -12,6 +12,7 @@ import type { UserModel } from "../model/mod.ts";
 import { UserNode } from "../node/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Operation } from "../types.ts";
+import { asyncMap } from "../util/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -69,11 +70,12 @@ export const UserQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<UserModel>({ prefix: ["user"] });
 
-        const users = [];
-        for await (const { value } of iter) users.push(value);
-
-        return users;
+        return await asyncMap(({ value }) => value, iter);
       },
+    },
+    me: {
+      type: new GraphQLNonNull(UserNode),
+      resolve: (_root, _args, { user }) => user,
     },
   }),
 });

@@ -32,6 +32,10 @@ export const RoomGroupNode: Node<RoomGroupModel> = new GraphQLObjectType({
         return res.value;
       },
     },
+    roomCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ roomIds }) => roomIds.size,
+    },
     rooms: {
       type: new GraphQLNonNull(
         new GraphQLList(

@@ -10,6 +10,7 @@ import {
 import type { RoomGroupModel, RoomModel } from "../model/mod.ts";
 import { RoomGroupNode, RoomNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
+import { asyncMap } from "../util/mod.ts";
 
 export const RoomQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -48,10 +49,7 @@ export const RoomQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<RoomModel>({ prefix: ["room"] });
 
-        const rooms = [];
-        for await (const { value } of iter) rooms.push(value);
-
-        return rooms;
+        return await asyncMap(({ value }) => value, iter);
       },
     },
     roomGroup: {
@@ -88,10 +86,7 @@ export const RoomQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<RoomGroupModel>({ prefix: ["room_group"] });
 
-        const roomGroups = [];
-        for await (const { value } of iter) roomGroups.push(value);
-
-        return roomGroups;
+        return await asyncMap(({ value }) => value, iter);
       },
     },
   }),
@@ -272,5 +267,59 @@ export const RoomMutation: Operation = new GraphQLObjectType({
         return update;
       },
     },
+    // extendRoomGroup: {
+    //   type: new GraphQLNonNull(RoomGroupNode),
+    //   args: {
+    //     roomGroupId: {
+    //       type: new GraphQLNonNull(GraphQLInt),
+    //     },
+    //     roomIds: {
+    //       type: new GraphQLNonNull(
+    //         new GraphQLList(
+    //           new GraphQLNonNull(GraphQLInt),
+    //         ),
+    //       ),
+    //     },
+    //   },
+    //   async resolve(_root, { roomGroupId, roomIds }, { user, kv }) {
+    //     const groupRes = await kv.get<RoomGroupModel>([
+    //       "room_group",
+    //       roomGroupId,
+    //     ]);
+
+    //     if (groupRes.value === null) {
+    //       throw new GraphQLError(`RoomGroup with ID ${roomGroupId} not found`);
+    //     }
+
+    //     const roomIdsSet = new Set<number>(roomIds);
+
+    //     for (const roomId of roomIdsSet) {
+    //       if (groupRes.value.roomIds.has(roomId)) continue;
+
+    //       const roomRes = await kv.get<RoomModel>(["room", roomId]);
+
+    //       if (roomRes.value === null) {
+    //         throw new GraphQLError(`Room with ID ${roomId} not found`);
+    //       }
+
+    //       const update: RoomModel = {
+    //         ...roomRes.value,
+    //         groupIds: new Set([...roomRes.value.groupIds, roomGroupId]),
+    //         updatedAt: new Date(),
+    //       };
+
+    //       const commitRes = await kv.atomic()
+    //         .check(roomRes)
+    //         .set(["room", roomId], update)
+    //         .commit();
+
+    //       if (!commitRes.ok) {
+    //         throw new GraphQLError(
+    //           `Failed to update Room with ID ${roomId}`,
+    //         );
+    //       }
+    //     }
+    //   },
+    // },
   }),
 });

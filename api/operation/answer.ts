@@ -16,6 +16,7 @@ import type {
 import { FieldTypeModel } from "../model/mod.ts";
 import { AnswerNode, ChoiceAnswerNode, TextAnswerNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
+import { asyncMap } from "../util/mod.ts";
 
 export const AnswerQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -73,10 +74,7 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
       async resolve(_root, { fieldId }, { kv }) {
         const iter = kv.list<AnswerModel>({ prefix: ["answer", fieldId] });
 
-        const answers = [];
-        for await (const { value } of iter) answers.push(value);
-
-        return answers;
+        return await asyncMap(({ value }) => value, iter);
       },
     },
   }),
