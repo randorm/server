@@ -9,6 +9,10 @@ export function assertChoiceAnswer(
     throw new GraphQLError(`Answer for Field with ID ${field.id} is empty`);
   }
 
+  if (!field.multiple && answer.value.size > 1) {
+    throw new GraphQLError(`Answer for Field with ID ${field.id} is multiple`);
+  }
+
   for (const optionIndex of answer.value) {
     if (optionIndex < 0 || optionIndex >= field.options.length) {
       throw new GraphQLError(

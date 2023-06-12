@@ -238,7 +238,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
       },
     },
     deleteAnswer: {
-      type: new GraphQLNonNull(AnswerNode),
+      type: new GraphQLNonNull(GraphQLInt),
       args: {
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),
@@ -269,7 +269,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        return answerRes.value;
+        return fieldId;
       },
     },
   }),
