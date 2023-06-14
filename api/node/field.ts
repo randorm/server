@@ -200,7 +200,7 @@ export const FieldNode = new GraphQLUnionType({
       case FieldTypeModel.CHOICE:
         return "ChoiceField";
       default:
-        throw new GraphQLError(`Unknown field type: ${type}`);
+        throw new GraphQLError(`Unknown Field type: ${type}`);
     }
   },
 });

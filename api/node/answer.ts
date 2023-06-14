@@ -161,7 +161,7 @@ export const AnswerNode = new GraphQLUnionType({
       case FieldTypeModel.CHOICE:
         return "ChoiceAnswer";
       default:
-        throw new GraphQLError(`Unknown answer type: ${type}`);
+        throw new GraphQLError(`Unknown Answer type: ${type}`);
     }
   },
 });

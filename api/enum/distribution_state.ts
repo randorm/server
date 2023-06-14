@@ -1,7 +1,7 @@
 import { GraphQLEnumType } from "../deps.ts";
 
 export const DistributionStateEnum = new GraphQLEnumType({
-  name: "FieldType",
+  name: "DistributionState",
   values: {
     PREPARING: {
       value: "preparing",

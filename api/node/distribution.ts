@@ -116,6 +116,7 @@ export const DistributionNode: Node<DistributionModel> = new GraphQLObjectType({
         return fields;
       },
     },
+    // TODO(machnevegor): сreate an interface with open and closed distribution
     groupCount: {
       type: GraphQLInt,
       resolve: ({ groupIds }) => groupIds?.size,
