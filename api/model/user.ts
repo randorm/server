@@ -22,7 +22,7 @@ export interface UserModel {
   role: RoleModel;
   profile: ProfileModel;
   fieldIds: Set<number>;
-  roomId: number | null;
+  groupIds: Set<number>;
   readonly createdAt: Date;
   updatedAt: Date;
 }

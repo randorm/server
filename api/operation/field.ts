@@ -24,7 +24,7 @@ import { asyncMap } from "../util/mod.ts";
 
 export const FieldQuery: Operation = new GraphQLObjectType({
   name: "Query",
-  fields: () => ({
+  fields: {
     field: {
       type: new GraphQLNonNull(FieldNode),
       args: {
@@ -47,7 +47,11 @@ export const FieldQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const res = await kv.get<Deno.KvU64>(["field_count"]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError("Field count not found");
+        }
+
+        return Number(res.value);
       },
     },
     fields: {
@@ -62,12 +66,12 @@ export const FieldQuery: Operation = new GraphQLObjectType({
         return await asyncMap(({ value }) => value, iter);
       },
     },
-  }),
+  },
 });
 
 export const FieldMutation: Operation = new GraphQLObjectType({
   name: "Mutation",
-  fields: () => ({
+  fields: {
     createTextField: {
       type: new GraphQLNonNull(FieldNode),
       args: {
@@ -91,10 +95,14 @@ export const FieldMutation: Operation = new GraphQLObjectType({
       ) {
         assertEditor(user);
 
-        const countRes = await kv.get<Deno.KvU64>(["field_count"]);
+        const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);
+
+        if (nextRes.value === null) {
+          throw new GraphQLError("Next Field ID not found");
+        }
 
         const field: TextFieldModel = {
-          id: countRes.value === null ? 0 : Number(countRes.value),
+          id: Number(nextRes.value),
           type: FieldTypeModel.TEXT,
           creatorId: user.id,
           ...args,
@@ -106,9 +114,11 @@ export const FieldMutation: Operation = new GraphQLObjectType({
         assertTextField(field);
 
         const commitRes = await kv.atomic()
-          .check(countRes)
+          .check(nextRes)
           .set(["field", field.id], field)
+          .set(["field:answer_count", field.id], 0n)
           .sum(["field_count"], 1n)
+          .sum(["field_next_id"], 1n)
           .commit();
 
         if (!commitRes.ok) {
@@ -141,10 +151,14 @@ export const FieldMutation: Operation = new GraphQLObjectType({
       async resolve(_root, args, { user, kv }) {
         assertEditor(user);
 
-        const countRes = await kv.get<Deno.KvU64>(["field_count"]);
+        const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);
+
+        if (nextRes.value === null) {
+          throw new GraphQLError("Next Field ID not found");
+        }
 
         const field: ChoiceFieldModel = {
-          id: countRes.value === null ? 0 : Number(countRes.value),
+          id: Number(nextRes.value),
           type: FieldTypeModel.CHOICE,
           creatorId: user.id,
           ...args,
@@ -154,9 +168,11 @@ export const FieldMutation: Operation = new GraphQLObjectType({
         assertChoiceField(field);
 
         const commitRes = await kv.atomic()
-          .check(countRes)
+          .check(nextRes)
           .set(["field", field.id], field)
+          .set(["field:answer_count", field.id], 0n)
           .sum(["field_count"], 1n)
+          .sum(["field_next_id"], 1n)
           .commit();
 
         if (!commitRes.ok) {
@@ -166,5 +182,5 @@ export const FieldMutation: Operation = new GraphQLObjectType({
         return field;
       },
     },
-  }),
+  },
 });

@@ -9,14 +9,13 @@ import {
 import { GenderEnum, RoleEnum } from "../enum/mod.ts";
 import type {
   AnswerModel,
-  FieldModel,
+  GroupModel,
   ProfileModel,
-  RoomModel,
   UserModel,
 } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
-import { AnswerNode, FieldNode, RoomNode } from "./mod.ts";
+import { AnswerNode, GroupNode } from "./mod.ts";
 
 export const ProfileNode: Node<ProfileModel> = new GraphQLObjectType({
   name: "Profile",
@@ -56,7 +55,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       async resolve({ id }, _args, { kv }) {
         const res = await kv.get<Deno.KvU64>(["user:views", id]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError(`Views of User with ID ${id} not found`);
+        }
+
+        return Number(res.value);
       },
     },
     profile: {
@@ -67,7 +70,13 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       async resolve({ id }, _args, { kv }) {
         const res = await kv.get<Deno.KvU64>(["user:viewed_count", id]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Viewed count of User with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
       },
     },
     viewed: {
@@ -91,7 +100,13 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       async resolve({ id }, _args, { kv }) {
         const res = await kv.get<Deno.KvU64>(["user:subscription_count", id]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Subscription count of User with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
       },
     },
     subscriptions: {
@@ -117,7 +132,13 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       async resolve({ id }, _args, { kv }) {
         const res = await kv.get<Deno.KvU64>(["user:subscriber_count", id]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Subscriber count of User with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
       },
     },
     subscribers: {
@@ -136,26 +157,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         return res.value;
       },
     },
-    fields: {
-      type: new GraphQLNonNull(
-        new GraphQLList(
-          new GraphQLNonNull(FieldNode),
-        ),
-      ),
-      async resolve({ fieldIds }, _args, { kv }) {
-        const fields = [];
-        for (const fieldId of fieldIds) {
-          const res = await kv.get<FieldModel>(["field", fieldId]);
-
-          if (res.value === null) {
-            throw new GraphQLError(`Field with ID ${fieldId} not found`);
-          }
-
-          fields.push(res.value);
-        }
-
-        return fields;
-      },
+    answerCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ fieldIds }) => fieldIds.size,
     },
     answers: {
       type: new GraphQLNonNull(
@@ -180,18 +184,29 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         return answers;
       },
     },
-    room: {
-      type: RoomNode,
-      async resolve({ roomId }, _args, { kv }) {
-        if (roomId === null) return null;
+    groupCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ groupIds }) => groupIds.size,
+    },
+    groups: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(GroupNode),
+        ),
+      ),
+      async resolve({ groupIds }, _args, { kv }) {
+        const groups = [];
+        for (const groupId of groupIds) {
+          const res = await kv.get<GroupModel>(["group", groupId]);
 
-        const res = await kv.get<RoomModel>(["room", roomId]);
+          if (res.value === null) {
+            throw new GraphQLError(`Group with ID ${groupId} not found`);
+          }
 
-        if (res.value === null) {
-          throw new GraphQLError(`Room with ID ${roomId} not found`);
+          groups.push(res.value);
         }
 
-        return res.value;
+        return groups;
       },
     },
     createdAt: {

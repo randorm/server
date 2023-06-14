@@ -12,15 +12,17 @@ import type {
   ChoiceAnswerModel,
   FieldModel,
   TextAnswerModel,
+  UserModel,
 } from "../model/mod.ts";
 import { FieldTypeModel } from "../model/mod.ts";
-import { AnswerNode, ChoiceAnswerNode, TextAnswerNode } from "../node/mod.ts";
+import { AnswerNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
+import { ChoiceAnswerUpdate, TextAnswerUpdate } from "../update/mod.ts";
 import { asyncMap } from "../util/mod.ts";
 
 export const AnswerQuery: Operation = new GraphQLObjectType({
   name: "Query",
-  fields: () => ({
+  fields: {
     answer: {
       type: new GraphQLNonNull(AnswerNode),
       args: {
@@ -57,7 +59,13 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
       async resolve(_root, { fieldId }, { kv }) {
         const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
 
-        return res.value === null ? 0 : Number(res.value);
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Answer count to Field with ID ${fieldId} not found`,
+          );
+        }
+
+        return Number(res.value);
       },
     },
     answers: {
@@ -77,14 +85,14 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
         return await asyncMap(({ value }) => value, iter);
       },
     },
-  }),
+  },
 });
 
 export const AnswerMutation: Operation = new GraphQLObjectType({
   name: "Mutation",
-  fields: () => ({
+  fields: {
     setTextAnswer: {
-      type: new GraphQLNonNull(TextAnswerNode),
+      type: new GraphQLNonNull(TextAnswerUpdate),
       args: {
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),
@@ -93,12 +101,13 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLString),
         },
       },
-      async resolve(_root, { fieldId, value }, { kv, user }) {
+      async resolve(_root, { fieldId, value }, { kv, user, userRes }) {
         const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
 
         if (fieldRes.value === null) {
           throw new GraphQLError(`Field with ID ${fieldId} not found`);
         }
+
         if (fieldRes.value.type !== FieldTypeModel.TEXT) {
           throw new GraphQLError(
             `Field with ID ${fieldRes.value.id} is not a text field`,
@@ -123,9 +132,17 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
           assertTextAnswer(answer, fieldRes.value);
 
+          const userUpdate: UserModel = {
+            ...user,
+            fieldIds: new Set([...user.fieldIds, fieldId]),
+            updatedAt: new Date(),
+          };
+
           const commitRes = await kv.atomic()
             .check(answerRes)
+            .check(userRes)
             .set(["answer", fieldId, user.id], answer)
+            .set(["user", user.id], userUpdate)
             .sum(["field:answer_count", fieldId], 1n)
             .commit();
 
@@ -133,20 +150,20 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             throw new GraphQLError("Failed to create Answer");
           }
 
-          return answer;
+          return { user, answer, field: fieldRes.value };
         }
 
-        const answer: TextAnswerModel = {
+        const answerUpdate: TextAnswerModel = {
           ...answerRes.value,
           value,
           updatedAt: new Date(),
         };
 
-        assertTextAnswer(answer, fieldRes.value);
+        assertTextAnswer(answerUpdate, fieldRes.value);
 
         const commitRes = await kv.atomic()
           .check(answerRes)
-          .set(["answer", fieldId, user.id], answer)
+          .set(["answer", fieldId, user.id], answerUpdate)
           .commit();
 
         if (!commitRes.ok) {
@@ -155,11 +172,11 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        return answer;
+        return { user, answer: answerUpdate, field: fieldRes.value };
       },
     },
     setChoiceAnswer: {
-      type: new GraphQLNonNull(ChoiceAnswerNode),
+      type: new GraphQLNonNull(ChoiceAnswerUpdate),
       args: {
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),
@@ -172,12 +189,13 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           ),
         },
       },
-      async resolve(_root, { fieldId, value }, { kv, user }) {
+      async resolve(_root, { fieldId, value }, { kv, user, userRes }) {
         const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
 
         if (fieldRes.value === null) {
           throw new GraphQLError(`Field with ID ${fieldId} not found`);
         }
+
         if (fieldRes.value.type !== FieldTypeModel.CHOICE) {
           throw new GraphQLError(
             `Field with ID ${fieldRes.value.id} is not a choice field`,
@@ -202,9 +220,17 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
           assertChoiceAnswer(answer, fieldRes.value);
 
+          const userUpdate: UserModel = {
+            ...user,
+            fieldIds: new Set([...user.fieldIds, fieldId]),
+            updatedAt: new Date(),
+          };
+
           const commitRes = await kv.atomic()
             .check(answerRes)
+            .check(userRes)
             .set(["answer", fieldId, user.id], answer)
+            .set(["user", user.id], userUpdate)
             .sum(["field:answer_count", fieldId], 1n)
             .commit();
 
@@ -212,20 +238,20 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             throw new GraphQLError("Failed to create Answer");
           }
 
-          return answer;
+          return { user, answer, field: fieldRes.value };
         }
 
-        const answer: ChoiceAnswerModel = {
+        const answerUpdate: ChoiceAnswerModel = {
           ...answerRes.value,
           value,
           updatedAt: new Date(),
         };
 
-        assertChoiceAnswer(answer, fieldRes.value);
+        assertChoiceAnswer(answerUpdate, fieldRes.value);
 
         const commitRes = await kv.atomic()
           .check(answerRes)
-          .set(["answer", fieldId, user.id], answer)
+          .set(["answer", fieldId, user.id], answerUpdate)
           .commit();
 
         if (!commitRes.ok) {
@@ -234,43 +260,8 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        return answer;
+        return { user, answer: answerUpdate, field: fieldRes.value };
       },
     },
-    deleteAnswer: {
-      type: new GraphQLNonNull(GraphQLInt),
-      args: {
-        fieldId: {
-          type: new GraphQLNonNull(GraphQLInt),
-        },
-      },
-      async resolve(_root, { fieldId }, { user, kv }) {
-        const answerRes = await kv.get<AnswerModel>([
-          "answer",
-          fieldId,
-          user.id,
-        ]);
-
-        if (answerRes.value === null) {
-          throw new GraphQLError(
-            `Answer to Field with ID ${fieldId} from User with ID ${user.id} not found`,
-          );
-        }
-
-        const commitRes = await kv.atomic()
-          .check(answerRes)
-          .delete(["answer", fieldId, user.id])
-          .sum(["field:answer_count", fieldId], -1n)
-          .commit();
-
-        if (!commitRes.ok) {
-          throw new GraphQLError(
-            `Failed to delete Answer to Field with ID ${fieldId} from User with ID ${user.id}`,
-          );
-        }
-
-        return fieldId;
-      },
-    },
-  }),
+  },
 });

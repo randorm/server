@@ -16,7 +16,7 @@ import { asyncMap } from "../util/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
   name: "Query",
-  fields: () => ({
+  fields: {
     user: {
       type: new GraphQLNonNull(UserNode),
       args: {
@@ -37,28 +37,13 @@ export const UserQuery: Operation = new GraphQLObjectType({
     userCount: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve(_root, _args, { kv }) {
-        const countRes = await kv.get<Deno.KvU64>(["user_count"]);
+        const res = await kv.get<Deno.KvU64>(["user_count"]);
 
-        // TODO(machnevegor): move responsibility to bot
-        if (countRes.value === null) {
-          const iter = kv.list<UserModel>({ prefix: ["user"] });
-
-          let count = 0;
-          for await (const _ of iter) count++;
-
-          const commitRes = await kv.atomic()
-            .check(countRes)
-            .set(["user_count"], count)
-            .commit();
-
-          if (!commitRes.ok) {
-            throw new GraphQLError("Failed to create User count");
-          }
-
-          return count;
+        if (res.value === null) {
+          throw new GraphQLError("User count not found");
         }
 
-        return Number(countRes.value);
+        return Number(res.value);
       },
     },
     users: {
@@ -73,16 +58,12 @@ export const UserQuery: Operation = new GraphQLObjectType({
         return await asyncMap(({ value }) => value, iter);
       },
     },
-    me: {
-      type: new GraphQLNonNull(UserNode),
-      resolve: (_root, _args, { user }) => user,
-    },
-  }),
+  },
 });
 
 export const UserMutation: Operation = new GraphQLObjectType({
   name: "Mutation",
-  fields: () => ({
+  fields: {
     updateUserProfile: {
       type: new GraphQLNonNull(UserNode),
       args: {
@@ -123,5 +104,5 @@ export const UserMutation: Operation = new GraphQLObjectType({
         return update;
       },
     },
-  }),
+  },
 });
