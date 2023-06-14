@@ -131,7 +131,6 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           creatorId: user.id,
           name,
           fieldIds: [],
-          groupIds: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
