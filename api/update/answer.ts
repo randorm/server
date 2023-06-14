@@ -13,7 +13,6 @@ export const TextAnswerUpdate = new GraphQLObjectType({
     user: {
       type: new GraphQLNonNull(UserNode),
     },
-    // TODO(machnevegor): answer count
     answer: {
       type: new GraphQLNonNull(TextAnswerNode),
     },
@@ -29,7 +28,6 @@ export const ChoiceAnswerUpdate = new GraphQLObjectType({
     user: {
       type: new GraphQLNonNull(UserNode),
     },
-    // TODO(machnevegor): answer count
     answer: {
       type: new GraphQLNonNull(ChoiceAnswerNode),
     },
