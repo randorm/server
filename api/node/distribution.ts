@@ -10,12 +10,12 @@ import {
 } from "../deps.ts";
 import { DistributionStateEnum } from "../enum/mod.ts";
 import type {
-  DistributionClosedModel,
-  DistributionGatheringModel,
+  ClosedDistributionModel,
   DistributionModel,
-  DistributionPreparingModel,
   FieldModel,
+  GatheringDistributionModel,
   GroupModel,
+  PreparingDistributionModel,
   UserModel,
 } from "../model/mod.ts";
 import { DistributionStateModel } from "../model/mod.ts";
@@ -104,10 +104,10 @@ export const BaseDistributionInterface = new GraphQLInterfaceType({
   }),
 });
 
-export const DistributionPreparingNode: Node<
-  DistributionPreparingModel
+export const PreparingDistributionNode: Node<
+  PreparingDistributionModel
 > = new GraphQLObjectType({
-  name: "DistributionPreparing",
+  name: "PreparingDistribution",
   interfaces: [
     BaseDistributionInterface,
   ],
@@ -163,10 +163,10 @@ export const DistributionPreparingNode: Node<
   }),
 });
 
-export const DistributionGatheringNode: Node<
-  DistributionGatheringModel
+export const GatheringDistributionNode: Node<
+  GatheringDistributionModel
 > = new GraphQLObjectType({
-  name: "DistributionGathering",
+  name: "GatheringDistribution",
   interfaces: [
     BaseDistributionInterface,
   ],
@@ -222,10 +222,10 @@ export const DistributionGatheringNode: Node<
   }),
 });
 
-export const DistributionClosedNode: Node<
-  DistributionClosedModel
+export const ClosedDistributionNode: Node<
+  ClosedDistributionModel
 > = new GraphQLObjectType({
-  name: "DistributionClosed",
+  name: "ClosedDistribution",
   interfaces: [
     BaseDistributionInterface,
   ],
@@ -309,18 +309,18 @@ export const DistributionClosedNode: Node<
 export const DistributionNode = new GraphQLUnionType({
   name: "Distribution",
   types: [
-    DistributionPreparingNode,
-    DistributionGatheringNode,
-    DistributionClosedNode,
+    PreparingDistributionNode,
+    GatheringDistributionNode,
+    ClosedDistributionNode,
   ],
   resolveType({ state }) {
     switch (state) {
       case DistributionStateModel.PREPARING:
-        return "DistributionPreparing";
+        return "PreparingDistribution";
       case DistributionStateModel.GATHERING:
-        return "DistributionGathering";
+        return "GatheringDistribution";
       case DistributionStateModel.CLOSED:
-        return "DistributionClosed";
+        return "ClosedDistribution";
     }
   },
 });

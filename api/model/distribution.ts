@@ -21,20 +21,20 @@ export interface BaseDistributionModel {
   updatedAt: Date;
 }
 
-export interface DistributionPreparingModel extends BaseDistributionModel {
+export interface PreparingDistributionModel extends BaseDistributionModel {
   readonly state: DistributionStateModel.PREPARING;
 }
 
-export interface DistributionGatheringModel extends BaseDistributionModel {
+export interface GatheringDistributionModel extends BaseDistributionModel {
   readonly state: DistributionStateModel.GATHERING;
 }
 
-export interface DistributionClosedModel extends BaseDistributionModel {
+export interface ClosedDistributionModel extends BaseDistributionModel {
   readonly state: DistributionStateModel.CLOSED;
   readonly groupIds: Set<number>;
 }
 
 export type DistributionModel =
-  | DistributionPreparingModel
-  | DistributionGatheringModel
-  | DistributionClosedModel;
+  | PreparingDistributionModel
+  | GatheringDistributionModel
+  | ClosedDistributionModel;
