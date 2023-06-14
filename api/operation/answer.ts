@@ -110,7 +110,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         if (fieldRes.value.type !== FieldTypeModel.TEXT) {
           throw new GraphQLError(
-            `Field with ID ${fieldRes.value.id} is not a text field`,
+            `Field with ID ${fieldRes.value.id} is not a TextField`,
           );
         }
 
@@ -198,7 +198,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         if (fieldRes.value.type !== FieldTypeModel.CHOICE) {
           throw new GraphQLError(
-            `Field with ID ${fieldRes.value.id} is not a choice field`,
+            `Field with ID ${fieldRes.value.id} is not a ChoiceField`,
           );
         }
 

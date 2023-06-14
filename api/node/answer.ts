@@ -59,7 +59,7 @@ export const TextAnswerNode: Node<TextAnswerModel> = new GraphQLObjectType({
 
         if (res.value.type !== FieldTypeModel.TEXT) {
           throw new GraphQLError(
-            `Field with ID ${fieldId} is not a text field`,
+            `Field with ID ${fieldId} is not a TextField`,
           );
         }
 
@@ -113,7 +113,7 @@ export const ChoiceAnswerNode: Node<ChoiceAnswerModel> = new GraphQLObjectType({
 
         if (res.value.type !== FieldTypeModel.CHOICE) {
           throw new GraphQLError(
-            `Field with ID ${fieldId} is not a choice field`,
+            `Field with ID ${fieldId} is not a ChoiceField`,
           );
         }
 
