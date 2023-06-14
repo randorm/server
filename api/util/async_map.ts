@@ -1,6 +1,6 @@
 export async function asyncMap<T, U = T>(
   callback: (value: T) => U | Promise<U>,
-  iterable: AsyncIterableIterator<T>,
+  iterable: AsyncIterable<T>,
 ): Promise<U[]> {
   const results = [];
   for await (const value of iterable) {
