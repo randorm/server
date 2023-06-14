@@ -4,6 +4,13 @@ export enum DistributionStateModel {
   CLOSED = "closed",
 }
 
+export interface GroupModel {
+  readonly id: number;
+  readonly distributionId: number;
+  readonly memberIds: Set<number>;
+  readonly createdAt: Date;
+}
+
 export interface BaseDistributionModel {
   readonly id: number;
   readonly state: DistributionStateModel;
@@ -20,13 +27,6 @@ export interface DistributionPreparingModel extends BaseDistributionModel {
 
 export interface DistributionGatheringModel extends BaseDistributionModel {
   readonly state: DistributionStateModel.GATHERING;
-}
-
-export interface GroupModel {
-  readonly id: number;
-  readonly distributionId: number;
-  readonly memberIds: Set<number>;
-  readonly createdAt: Date;
 }
 
 export interface DistributionClosedModel extends BaseDistributionModel {
