@@ -236,7 +236,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        return distributionRes.value;
+        return distributionId;
       },
     },
   },
