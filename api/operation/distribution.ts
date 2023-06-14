@@ -197,5 +197,47 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         return update;
       },
     },
+    deleteDistribution: {
+      type: new GraphQLNonNull(GraphQLInt),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { distributionId }, { user, kv }) {
+        assertEditor(user);
+
+        const distributionRes = await kv.get<DistributionModel>([
+          "distribution",
+          distributionId,
+        ]);
+
+        if (distributionRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
+
+        if (distributionRes.value.state !== DistributionStateModel.PREPARING) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} is not in PREPARING state`,
+          );
+        }
+
+        const commitRes = await kv.atomic()
+          .check(distributionRes)
+          .delete(["distribution", distributionId])
+          .sum(["distribution_count"], -1n)
+          .commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(
+            `Failed to delete Distribution with ID ${distributionId}`,
+          );
+        }
+
+        return distributionRes.value;
+      },
+    },
   },
 });
