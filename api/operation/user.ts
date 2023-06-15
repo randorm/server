@@ -1,4 +1,4 @@
-import { assertProfile } from "../assert/mod.ts";
+import { assertUserProfile } from "../assert/mod.ts";
 import {
   GraphQLError,
   GraphQLInt,
@@ -84,7 +84,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
         },
       },
       async resolve(_root, args, { user, userRes, kv }) {
-        assertProfile(args);
+        assertUserProfile(args);
 
         const update: UserModel = {
           ...user,

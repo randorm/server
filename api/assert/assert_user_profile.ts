@@ -1,7 +1,7 @@
 import { GraphQLError } from "../deps.ts";
 import type { ProfileModel } from "../model/mod.ts";
 
-export function assertProfile(profile: ProfileModel) {
+export function assertUserProfile(profile: ProfileModel) {
   if (!profile.firstName || profile.firstName.length > 32) {
     throw new GraphQLError("First name should be between 1 and 32 characters");
   }
