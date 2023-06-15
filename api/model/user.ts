@@ -22,6 +22,7 @@ export interface UserModel {
   role: RoleModel;
   profile: ProfileModel;
   fieldIds: Set<number>;
+  distributionIds: Set<number>;
   groupIds: Set<number>;
   readonly createdAt: Date;
   updatedAt: Date;

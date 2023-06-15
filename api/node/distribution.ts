@@ -1,3 +1,4 @@
+import { resolve } from "https://deno.land/std@0.184.0/path/win32.ts";
 import {
   GraphQLError,
   GraphQLInt,
@@ -213,6 +214,44 @@ export const GatheringDistributionNode: Node<
         return fields;
       },
     },
+    participantCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>([
+          "distribution:participant_count",
+          id,
+        ]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Participant count of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
+    },
+    participants: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(UserNode),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Set<UserModel>>([
+          "distribution:participants",
+          id,
+        ]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Participants of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return res.value;
+      },
+    },
     createdAt: {
       type: new GraphQLNonNull(DateScalar),
     },
@@ -270,6 +309,44 @@ export const ClosedDistributionNode: Node<
         }
 
         return fields;
+      },
+    },
+    participantCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>([
+          "distribution:participant_count",
+          id,
+        ]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Participant count of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
+    },
+    participants: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(UserNode),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Set<UserModel>>([
+          "distribution:participants",
+          id,
+        ]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Participants of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return res.value;
       },
     },
     groupCount: {

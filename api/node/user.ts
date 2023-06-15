@@ -9,13 +9,14 @@ import {
 import { GenderEnum, RoleEnum } from "../enum/mod.ts";
 import type {
   AnswerModel,
+  DistributionModel,
   GroupModel,
   ProfileModel,
   UserModel,
 } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
-import { AnswerNode, GroupNode } from "./mod.ts";
+import { AnswerNode, DistributionNode, GroupNode } from "./mod.ts";
 
 export const ProfileNode: Node<ProfileModel> = new GraphQLObjectType({
   name: "Profile",
@@ -182,6 +183,36 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         return answers;
+      },
+    },
+    distributionCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ distributionIds }) => distributionIds.size,
+    },
+    distributions: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(DistributionNode),
+        ),
+      ),
+      async resolve({ distributionIds }, _args, { kv }) {
+        const distributions = [];
+        for (const distributionId of distributionIds) {
+          const res = await kv.get<DistributionModel>([
+            "distribution",
+            distributionId,
+          ]);
+
+          if (res.value === null) {
+            throw new GraphQLError(
+              `Distribution with ID ${distributionId} not found`,
+            );
+          }
+
+          distributions.push(res.value);
+        }
+
+        return distributions;
       },
     },
     groupCount: {
