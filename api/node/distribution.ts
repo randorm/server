@@ -237,18 +237,29 @@ export const GatheringDistributionNode: Node<
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Set<UserModel>>([
-          "distribution:participants",
+        const participantIdsRes = await kv.get<Set<number>>([
+          "distribution:participant_ids",
           id,
         ]);
 
-        if (res.value === null) {
+        if (participantIdsRes.value === null) {
           throw new GraphQLError(
             `Participants of Distribution with ID ${id} not found`,
           );
         }
 
-        return res.value;
+        const participants = [];
+        for (const participantId of participantIdsRes.value) {
+          const userRes = await kv.get<UserModel>(["user", participantId]);
+
+          if (userRes.value === null) {
+            throw new GraphQLError(`User with ID ${participantId} not found`);
+          }
+
+          participants.push(userRes.value);
+        }
+
+        return participants;
       },
     },
     createdAt: {
@@ -334,18 +345,29 @@ export const ClosedDistributionNode: Node<
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Set<UserModel>>([
-          "distribution:participants",
+        const participantIdsRes = await kv.get<Set<number>>([
+          "distribution:participant_ids",
           id,
         ]);
 
-        if (res.value === null) {
+        if (participantIdsRes.value === null) {
           throw new GraphQLError(
             `Participants of Distribution with ID ${id} not found`,
           );
         }
 
-        return res.value;
+        const participants = [];
+        for (const participantId of participantIdsRes.value) {
+          const userRes = await kv.get<UserModel>(["user", participantId]);
+
+          if (userRes.value === null) {
+            throw new GraphQLError(`User with ID ${participantId} not found`);
+          }
+
+          participants.push(userRes.value);
+        }
+
+        return participants;
       },
     },
     groupCount: {

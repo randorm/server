@@ -87,13 +87,24 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Set<UserModel>>(["user:viewed", id]);
+        const viewedIdsRes = await kv.get<Set<number>>(["user:viewed_ids", id]);
 
-        if (res.value === null) {
+        if (viewedIdsRes.value === null) {
           throw new GraphQLError(`Viewed of User with ID ${id} not found`);
         }
 
-        return res.value;
+        const viewed = [];
+        for (const viewedId of viewedIdsRes.value) {
+          const userRes = await kv.get<UserModel>(["user", viewedId]);
+
+          if (userRes.value === null) {
+            throw new GraphQLError(`User with ID ${viewedId} not found`);
+          }
+
+          viewed.push(userRes.value);
+        }
+
+        return viewed;
       },
     },
     subscriptionCount: {
@@ -117,15 +128,29 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Set<UserModel>>(["user:subscriptions", id]);
+        const subscriptionIdsRes = await kv.get<Set<number>>([
+          "user:subscription_ids",
+          id,
+        ]);
 
-        if (res.value === null) {
+        if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
             `Subscriptions of User with ID ${id} not found`,
           );
         }
 
-        return res.value;
+        const subscriptions = [];
+        for (const subscriptionId of subscriptionIdsRes.value) {
+          const userRes = await kv.get<UserModel>(["user", subscriptionId]);
+
+          if (userRes.value === null) {
+            throw new GraphQLError(`User with ID ${subscriptionId} not found`);
+          }
+
+          subscriptions.push(userRes.value);
+        }
+
+        return subscriptions;
       },
     },
     subscriberCount: {
@@ -149,13 +174,27 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const res = await kv.get<Set<UserModel>>(["user:subscribers", id]);
+        const subscriberIdsRes = await kv.get<Set<number>>([
+          "user:subscriber_ids",
+          id,
+        ]);
 
-        if (res.value === null) {
+        if (subscriberIdsRes.value === null) {
           throw new GraphQLError(`Subscribers of User with ID ${id} not found`);
         }
 
-        return res.value;
+        const subscribers = [];
+        for (const subscriberId of subscriberIdsRes.value) {
+          const userRes = await kv.get<UserModel>(["user", subscriberId]);
+
+          if (userRes.value === null) {
+            throw new GraphQLError(`User with ID ${subscriberId} not found`);
+          }
+
+          subscribers.push(userRes.value);
+        }
+
+        return subscribers;
       },
     },
     answerCount: {
