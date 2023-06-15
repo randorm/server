@@ -1,4 +1,3 @@
-import { resolve } from "https://deno.land/std@0.184.0/path/win32.ts";
 import {
   GraphQLError,
   GraphQLInt,
