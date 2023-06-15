@@ -84,13 +84,13 @@ export const UserMutation: Operation = new GraphQLObjectType({
         },
       },
       async resolve(_root, args, { user, userRes, kv }) {
-        assertUserProfile(args);
-
         const update: UserModel = {
           ...user,
           profile: args,
           updatedAt: new Date(),
         };
+
+        assertUserProfile(update);
 
         const commitRes = await kv.atomic()
           .check(userRes)
