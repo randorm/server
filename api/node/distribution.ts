@@ -88,6 +88,9 @@ export const BaseDistributionInterface = new GraphQLInterfaceType({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
+    fieldCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
     fields: {
       type: new GraphQLNonNull(
         new GraphQLList(
@@ -132,6 +135,10 @@ export const PreparingDistributionNode: Node<
     },
     name: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    fieldCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ fieldIds }) => fieldIds.length,
     },
     fields: {
       type: new GraphQLNonNull(
@@ -191,6 +198,10 @@ export const GatheringDistributionNode: Node<
     },
     name: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    fieldCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ fieldIds }) => fieldIds.length,
     },
     fields: {
       type: new GraphQLNonNull(
@@ -299,6 +310,10 @@ export const ClosedDistributionNode: Node<
     },
     name: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    fieldCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ fieldIds }) => fieldIds.length,
     },
     fields: {
       type: new GraphQLNonNull(
