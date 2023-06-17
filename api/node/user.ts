@@ -90,7 +90,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         const viewedIdsRes = await kv.get<Set<number>>(["user:viewed_ids", id]);
 
         if (viewedIdsRes.value === null) {
-          throw new GraphQLError(`Viewed of User with ID ${id} not found`);
+          throw new GraphQLError(`Viewed IDs of User with ID ${id} not found`);
         }
 
         const viewed = [];
@@ -135,7 +135,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
 
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
-            `Subscriptions of User with ID ${id} not found`,
+            `Subscription IDs of User with ID ${id} not found`,
           );
         }
 
@@ -180,7 +180,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ]);
 
         if (subscriberIdsRes.value === null) {
-          throw new GraphQLError(`Subscribers of User with ID ${id} not found`);
+          throw new GraphQLError(`Subscriber IDs of User with ID ${id} not found`);
         }
 
         const subscribers = [];

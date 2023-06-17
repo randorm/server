@@ -104,5 +104,46 @@ export const UserMutation: Operation = new GraphQLObjectType({
         return update;
       },
     },
+    markViewed: {
+      type: new GraphQLNonNull(UserNode),
+      args: {
+        userId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { userId }, { user, kv, userRes }) {
+        const viewedIdsRes = await kv.get<Set<number>>([
+          "user:viewed_ids",
+          user.id,
+        ]);
+
+        if (viewedIdsRes.value === null) {
+          throw new GraphQLError(
+            `Viewed IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        const targetRes = await kv.get<UserModel>(["user", userId]);
+
+        if (targetRes.value === null) {
+          throw new GraphQLError(`User with ID ${userId} not found`);
+        }
+
+        const viewedIds = new Set<number>([...viewedIdsRes.value, userId]);
+
+        const commitRes = await kv.atomic()
+          .check(userRes)
+          .set(["user:viewed_ids", user.id], viewedIds)
+          .sum(["user:viewed_count", user.id], 1n)
+          .sum(["user:views", userId], 1n)
+          .commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(`Failed to update User with ID ${userId}`);
+        }
+
+        return targetRes.value;
+      },
+    },
   },
 });
