@@ -7,7 +7,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "../deps.ts";
-import type { DistributionModel, GroupModel } from "../model/mod.ts";
+import { DistributionStateEnum } from "../enum/mod.ts";
+import type {
+  DistributionModel,
+  FieldModel,
+  GroupModel,
+} from "../model/mod.ts";
 import { DistributionStateModel } from "../model/mod.ts";
 import { DistributionNode, GroupNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
@@ -151,6 +156,100 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         return distribution;
       },
     },
+    updateDistributionState: {
+      type: new GraphQLNonNull(DistributionNode),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        state: {
+          type: new GraphQLNonNull(DistributionStateEnum),
+        },
+      },
+      async resolve(_root, { distributionId, state }, { user, kv }) {
+        assertEditor(user);
+
+        const distributionRes = await kv.get<DistributionModel>([
+          "distribution",
+          distributionId,
+        ]);
+
+        if (distributionRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
+
+        switch (distributionRes.value.state) {
+          case DistributionStateModel.PREPARING: {
+            if (state !== DistributionStateModel.GATHERING) {
+              throw new GraphQLError("State order is violated");
+            }
+
+            const update: DistributionModel = {
+              ...distributionRes.value,
+              state,
+              updatedAt: new Date(),
+            };
+
+            assertDistribution(update);
+
+            const commitRes = await kv.atomic()
+              .check(distributionRes)
+              .set(["distribution", distributionId], update)
+              .set(
+                ["distribution:participant_ids", distributionId],
+                new Set<number>(),
+              )
+              .set(
+                ["distribution:participant_count", distributionId],
+                0n,
+              )
+              .commit();
+
+            if (!commitRes.ok) {
+              throw new GraphQLError(
+                `Failed to update Distribution with ID ${distributionId}`,
+              );
+            }
+
+            return update;
+          }
+          case DistributionStateModel.GATHERING: {
+            if (state !== DistributionStateModel.CLOSED) {
+              throw new GraphQLError("State order is violated");
+            }
+
+            const update: DistributionModel = {
+              ...distributionRes.value,
+              state,
+              // TODO: distribute participants into the groups
+              groupIds: new Set<number>(),
+              updatedAt: new Date(),
+            };
+
+            assertDistribution(update);
+
+            const commitRes = await kv.atomic()
+              .check(distributionRes)
+              .set(["distribution", distributionId], update)
+              .commit();
+
+            if (!commitRes.ok) {
+              throw new GraphQLError(
+                `Failed to update Distribution with ID ${distributionId}`,
+              );
+            }
+
+            return update;
+          }
+          case DistributionStateModel.CLOSED:
+            throw new GraphQLError(
+              `Distribution with ID ${distributionId} is closed`,
+            );
+        }
+      },
+    },
     updateDistributionName: {
       type: new GraphQLNonNull(DistributionNode),
       args: {
@@ -178,6 +277,70 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         const update: DistributionModel = {
           ...distributionRes.value,
           name,
+          updatedAt: new Date(),
+        };
+
+        assertDistribution(update);
+
+        const commitRes = await kv.atomic()
+          .check(distributionRes)
+          .set(["distribution", distributionId], update)
+          .commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(
+            `Failed to update Distribution with ID ${distributionId}`,
+          );
+        }
+
+        return update;
+      },
+    },
+    updateDistributionFields: {
+      type: new GraphQLNonNull(DistributionNode),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        fieldIds: {
+          type: new GraphQLNonNull(
+            new GraphQLList(
+              new GraphQLNonNull(GraphQLInt),
+            ),
+          ),
+        },
+      },
+      async resolve(_root, { distributionId, fieldIds }, { user, kv }) {
+        assertEditor(user);
+
+        const distributionRes = await kv.get<DistributionModel>([
+          "distribution",
+          distributionId,
+        ]);
+
+        if (distributionRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
+
+        const fieldIdsSet = new Set<number>(fieldIds);
+
+        if (fieldIdsSet.size !== fieldIds.length) {
+          throw new GraphQLError("Field IDs must be unique");
+        }
+
+        for (const fieldId of fieldIdsSet) {
+          const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+
+          if (fieldRes.value === null) {
+            throw new GraphQLError(`Field with ID ${fieldId} not found`);
+          }
+        }
+
+        const update: DistributionModel = {
+          ...distributionRes.value,
+          fieldIds,
           updatedAt: new Date(),
         };
 
