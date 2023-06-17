@@ -180,7 +180,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ]);
 
         if (subscriberIdsRes.value === null) {
-          throw new GraphQLError(`Subscriber IDs of User with ID ${id} not found`);
+          throw new GraphQLError(
+            `Subscriber IDs of User with ID ${id} not found`,
+          );
         }
 
         const subscribers = [];

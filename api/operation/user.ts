@@ -12,6 +12,7 @@ import type { UserModel } from "../model/mod.ts";
 import { UserNode } from "../node/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Operation } from "../types.ts";
+import { SubscribeUpdate, UnsubscribeUpdate } from "../update/mod.ts";
 import { asyncMap } from "../util/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
@@ -111,7 +112,13 @@ export const UserMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { userId }, { user, kv, userRes }) {
+      async resolve(_root, { userId }, { kv, user }) {
+        const targetRes = await kv.get<UserModel>(["user", userId]);
+
+        if (targetRes.value === null) {
+          throw new GraphQLError(`User with ID ${userId} not found`);
+        }
+
         const viewedIdsRes = await kv.get<Set<number>>([
           "user:viewed_ids",
           user.id,
@@ -123,16 +130,10 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const targetRes = await kv.get<UserModel>(["user", userId]);
-
-        if (targetRes.value === null) {
-          throw new GraphQLError(`User with ID ${userId} not found`);
-        }
-
         const viewedIds = new Set<number>([...viewedIdsRes.value, userId]);
 
         const commitRes = await kv.atomic()
-          .check(userRes)
+          .check(viewedIdsRes)
           .set(["user:viewed_ids", user.id], viewedIds)
           .sum(["user:viewed_count", user.id], 1n)
           .sum(["user:views", userId], 1n)
@@ -143,6 +144,140 @@ export const UserMutation: Operation = new GraphQLObjectType({
         }
 
         return targetRes.value;
+      },
+    },
+    subscribe: {
+      type: new GraphQLNonNull(SubscribeUpdate),
+      args: {
+        userId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { userId }, { kv, user }) {
+        const targetRes = await kv.get<UserModel>(["user", userId]);
+
+        if (targetRes.value === null) {
+          throw new GraphQLError(`User with ID ${userId} not found`);
+        }
+
+        const subscribtionIdsRes = await kv.get<Set<number>>([
+          "user:subscribtion_ids",
+          user.id,
+        ]);
+
+        if (subscribtionIdsRes.value === null) {
+          throw new GraphQLError(
+            `Subscribtion IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        const subscribtionIds = new Set<number>([
+          ...subscribtionIdsRes.value,
+          userId,
+        ]);
+
+        const subscriberIdsRes = await kv.get<Set<number>>([
+          "user:subscriber_ids",
+          userId,
+        ]);
+
+        if (subscriberIdsRes.value === null) {
+          throw new GraphQLError(
+            `Subscriber IDs of User with ID ${userId} not found`,
+          );
+        }
+
+        const subscriberIds = new Set<number>([
+          ...subscriberIdsRes.value,
+          user.id,
+        ]);
+
+        const commitRes = await kv.atomic()
+          .check(subscribtionIdsRes)
+          .check(subscriberIdsRes)
+          .set(["user:subscribtion_ids", user.id], subscribtionIds)
+          .set(["user:subscriber_ids", userId], subscriberIds)
+          .sum(["user:subscribtion_count", user.id], 1n)
+          .sum(["user:subscriber_count", userId], 1n)
+          .commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(`Failed to update User with ID ${userId}`);
+        }
+
+        return { user: targetRes.value, subscriber: user };
+      },
+    },
+    unsubscribe: {
+      type: new GraphQLNonNull(UnsubscribeUpdate),
+      args: {
+        userId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { userId }, { kv, user }) {
+        const targetRes = await kv.get<UserModel>(["user", userId]);
+
+        if (targetRes.value === null) {
+          throw new GraphQLError(`User with ID ${userId} not found`);
+        }
+
+        const subscribtionIdsRes = await kv.get<Set<number>>([
+          "user:subscribtion_ids",
+          user.id,
+        ]);
+
+        if (subscribtionIdsRes.value === null) {
+          throw new GraphQLError(
+            `Subscribtion IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        if (!subscribtionIdsRes.value.has(userId)) {
+          throw new GraphQLError(
+            `User with ID ${userId} is not subscribed to User with ID ${user.id}`,
+          );
+        }
+
+        const subscribtionIds = new Set<number>(
+          [...subscribtionIdsRes.value].filter((id) => id !== userId),
+        );
+
+        const subscriberIdsRes = await kv.get<Set<number>>([
+          "user:subscriber_ids",
+          userId,
+        ]);
+
+        if (subscriberIdsRes.value === null) {
+          throw new GraphQLError(
+            `Subscriber IDs of User with ID ${userId} not found`,
+          );
+        }
+
+        if (!subscriberIdsRes.value.has(user.id)) {
+          throw new GraphQLError(
+            `User with ID ${userId} is not subscribed to User with ID ${user.id}`,
+          );
+        }
+
+        const subscriberIds = new Set<number>(
+          [...subscriberIdsRes.value].filter((id) => id !== user.id),
+        );
+
+        const commitRes = await kv.atomic()
+          .check(subscribtionIdsRes)
+          .check(subscriberIdsRes)
+          .set(["user:subscribtion_ids", user.id], subscribtionIds)
+          .set(["user:subscriber_ids", userId], subscriberIds)
+          .sum(["user:subscribtion_count", user.id], -1n)
+          .sum(["user:subscriber_count", userId], -1n)
+          .commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(`Failed to update User with ID ${userId}`);
+        }
+
+        return { user: targetRes.value, subscriber: user };
       },
     },
   },
