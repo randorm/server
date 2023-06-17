@@ -17,7 +17,7 @@ import type {
 import { FieldTypeModel } from "../model/mod.ts";
 import { AnswerNode } from "../node/mod.ts";
 import type { Operation } from "../types.ts";
-import { ChoiceAnswerUpdate, TextAnswerUpdate } from "../update/mod.ts";
+import { SetChoiceAnswerUpdate, SetTextAnswerUpdate } from "../update/mod.ts";
 import { asyncMap } from "../util/mod.ts";
 
 export const AnswerQuery: Operation = new GraphQLObjectType({
@@ -92,7 +92,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
   name: "Mutation",
   fields: {
     setTextAnswer: {
-      type: new GraphQLNonNull(TextAnswerUpdate),
+      type: new GraphQLNonNull(SetTextAnswerUpdate),
       args: {
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),
@@ -176,7 +176,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
       },
     },
     setChoiceAnswer: {
-      type: new GraphQLNonNull(ChoiceAnswerUpdate),
+      type: new GraphQLNonNull(SetChoiceAnswerUpdate),
       args: {
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),

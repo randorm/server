@@ -7,8 +7,8 @@ import {
   UserNode,
 } from "../node/mod.ts";
 
-export const TextAnswerUpdate = new GraphQLObjectType({
-  name: "TextAnswerUpdate",
+export const SetTextAnswerUpdate = new GraphQLObjectType({
+  name: "SetTextAnswerUpdate",
   fields: {
     user: {
       type: new GraphQLNonNull(UserNode),
@@ -22,8 +22,8 @@ export const TextAnswerUpdate = new GraphQLObjectType({
   },
 });
 
-export const ChoiceAnswerUpdate = new GraphQLObjectType({
-  name: "ChoiceAnswerUpdate",
+export const SetChoiceAnswerUpdate = new GraphQLObjectType({
+  name: "SetChoiceAnswerUpdate",
   fields: {
     user: {
       type: new GraphQLNonNull(UserNode),
