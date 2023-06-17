@@ -241,6 +241,8 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
               );
             }
 
+            // TODO: send groups to the participants
+
             return update;
           }
           case DistributionStateModel.CLOSED:
