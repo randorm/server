@@ -1,6 +1,18 @@
 import { GraphQLNonNull, GraphQLObjectType } from "../deps.ts";
 import { UserNode } from "../node/mod.ts";
 
+export const MarkViewedUpdate = new GraphQLObjectType({
+  name: "MarkViewedUpdate",
+  fields: {
+    user: {
+      type: new GraphQLNonNull(UserNode),
+    },
+    viewer: {
+      type: new GraphQLNonNull(UserNode),
+    },
+  },
+});
+
 export const SubscribeUpdate = new GraphQLObjectType({
   name: "SubscribeUpdate",
   fields: {

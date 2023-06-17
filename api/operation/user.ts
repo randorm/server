@@ -12,7 +12,11 @@ import type { UserModel } from "../model/mod.ts";
 import { UserNode } from "../node/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Operation } from "../types.ts";
-import { SubscribeUpdate, UnsubscribeUpdate } from "../update/mod.ts";
+import {
+  MarkViewedUpdate,
+  SubscribeUpdate,
+  UnsubscribeUpdate,
+} from "../update/mod.ts";
 import { asyncMap } from "../util/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
@@ -106,7 +110,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
       },
     },
     markViewed: {
-      type: new GraphQLNonNull(UserNode),
+      type: new GraphQLNonNull(MarkViewedUpdate),
       args: {
         userId: {
           type: new GraphQLNonNull(GraphQLInt),
@@ -143,7 +147,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError(`Failed to update User with ID ${userId}`);
         }
 
-        return targetRes.value;
+        return { user: targetRes.value, viewer: user };
       },
     },
     subscribe: {
