@@ -21,8 +21,21 @@ serve(async (req: Request) => {
           source: data.query,
           variableValues: data.variables,
           operationName: data.operationName,
-          // TODO(machnevegor): add contextValue
+          // TODO(machnevegor): add a contextValue
         });
+
+        // TODO(machnevegor): remove the stub
+        if (result.errors) {
+          return Response.json(
+            {
+              errros: [
+                { message: "Access Denied" },
+              ],
+              data: null,
+            },
+            { status: 500 },
+          );
+        }
 
         return Response.json(result);
       } catch (e) {
