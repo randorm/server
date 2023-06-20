@@ -55,6 +55,9 @@ export const FieldInterface: Interface = new GraphQLInterfaceType({
     question: {
       type: new GraphQLNonNull(GraphQLString),
     },
+    answerCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
     answers: {
       type: new GraphQLNonNull(
         new GraphQLList(
@@ -111,6 +114,25 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
     },
     sample: {
       type: GraphQLString,
+    },
+    answerCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      args: {
+        fieldId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { fieldId }, { kv }) {
+        const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Answer count to Field with ID ${fieldId} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
     },
     answers: {
       type: new GraphQLNonNull(
@@ -180,6 +202,25 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
           new GraphQLNonNull(GraphQLString),
         ),
       ),
+    },
+    answerCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      args: {
+        fieldId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { fieldId }, { kv }) {
+        const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Answer count to Field with ID ${fieldId} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
     },
     answers: {
       type: new GraphQLNonNull(
