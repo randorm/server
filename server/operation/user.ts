@@ -179,18 +179,18 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
 
-        const subscribtionIdsRes = await kv.get<Set<number>>([
-          "user:subscribtion_ids",
+        const subscriptionIdsRes = await kv.get<Set<number>>([
+          "user:subscription_ids",
           user.id,
         ]);
 
-        if (subscribtionIdsRes.value === null) {
+        if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
-            `Subscribtion IDs of User with ID ${user.id} not found`,
+            `Subscription IDs of User with ID ${user.id} not found`,
           );
         }
 
-        const inSubscribtions = subscribtionIdsRes.value.has(userId);
+        const inSubscriptions = subscriptionIdsRes.value.has(userId);
 
         const subscriberIdsRes = await kv.get<Set<number>>([
           "user:subscriber_ids",
@@ -205,22 +205,22 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
-        if (inSubscribtions && inSubscribers) {
+        if (inSubscriptions && inSubscribers) {
           return { user: userRes.value, subscriber: user };
         }
 
         const operation = kv.atomic();
 
-        if (!inSubscribtions) {
-          const subscribtionIds = new Set<number>([
-            ...subscribtionIdsRes.value,
+        if (!inSubscriptions) {
+          const subscriptionIds = new Set<number>([
+            ...subscriptionIdsRes.value,
             userId,
           ]);
 
           operation
-            .check(subscribtionIdsRes)
-            .set(["user:subscribtion_ids", user.id], subscribtionIds)
-            .sum(["user:subscribtion_count", user.id], 1n);
+            .check(subscriptionIdsRes)
+            .set(["user:subscription_ids", user.id], subscriptionIds)
+            .sum(["user:subscription_count", user.id], 1n);
         }
 
         if (!inSubscribers) {
@@ -264,18 +264,18 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
 
-        const subscribtionIdsRes = await kv.get<Set<number>>([
-          "user:subscribtion_ids",
+        const subscriptionIdsRes = await kv.get<Set<number>>([
+          "user:subscription_ids",
           user.id,
         ]);
 
-        if (subscribtionIdsRes.value === null) {
+        if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
-            `Subscribtion IDs of User with ID ${user.id} not found`,
+            `Subscription IDs of User with ID ${user.id} not found`,
           );
         }
 
-        const inSubscribtions = subscribtionIdsRes.value.has(userId);
+        const inSubscriptions = subscriptionIdsRes.value.has(userId);
 
         const subscriberIdsRes = await kv.get<Set<number>>([
           "user:subscriber_ids",
@@ -290,21 +290,21 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
-        if (!inSubscribtions && !inSubscribers) {
+        if (!inSubscriptions && !inSubscribers) {
           return { user: userRes.value, unsubscriber: user };
         }
 
         const operation = kv.atomic();
 
-        if (inSubscribtions) {
-          const subscribtionIds = new Set<number>(
-            [...subscribtionIdsRes.value].filter((id) => id !== userId),
+        if (inSubscriptions) {
+          const subscriptionIds = new Set<number>(
+            [...subscriptionIdsRes.value].filter((id) => id !== userId),
           );
 
           operation
-            .check(subscribtionIdsRes)
-            .set(["user:subscribtion_ids", user.id], subscribtionIds)
-            .sum(["user:subscribtion_count", user.id], -1n);
+            .check(subscriptionIdsRes)
+            .set(["user:subscription_ids", user.id], subscriptionIds)
+            .sum(["user:subscription_count", user.id], -1n);
         }
 
         if (inSubscribers) {
