@@ -21,6 +21,10 @@ import { asyncMap } from "../util/mod.ts";
 export const UserQuery: Operation = new GraphQLObjectType({
   name: "Query",
   fields: {
+    me: {
+      type: new GraphQLNonNull(UserNode),
+      resolve: (_root, _args, { user }) => user,
+    },
     user: {
       type: new GraphQLNonNull(UserNode),
       args: {
@@ -37,10 +41,6 @@ export const UserQuery: Operation = new GraphQLObjectType({
 
         return res.value;
       },
-    },
-    me: {
-      type: new GraphQLNonNull(UserNode),
-      resolve: (_root, _args, { user }) => user,
     },
     userCount: {
       type: new GraphQLNonNull(GraphQLInt),
