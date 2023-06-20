@@ -227,10 +227,6 @@ async function getUserRes(userId: number): Promise<Deno.KvEntry<UserModel>> {
 
   const nextId = Number(nextIdRes.value);
 
-  if (userId > nextId) {
-    throw new GraphQLError(`User with ID ${userId} not found`);
-  }
-
   if (userId === nextId) {
     await createUser(nextIdRes, nextId);
   }

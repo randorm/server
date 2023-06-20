@@ -38,6 +38,10 @@ export const UserQuery: Operation = new GraphQLObjectType({
         return res.value;
       },
     },
+    me: {
+      type: new GraphQLNonNull(UserNode),
+      resolve: (_root, _args, { user }) => user,
+    },
     userCount: {
       type: new GraphQLNonNull(GraphQLInt),
       async resolve(_root, _args, { kv }) {
