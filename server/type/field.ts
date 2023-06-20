@@ -1,0 +1,211 @@
+import {
+  GraphQLBoolean,
+  GraphQLEnumType,
+  GraphQLError,
+  GraphQLInt,
+  GraphQLInterfaceType,
+  GraphQLList,
+  GraphQLNonNull,
+  GraphQLObjectType,
+  GraphQLString,
+} from "../deps.ts";
+import type {
+  AnswerModel,
+  ChoiceFieldModel,
+  TextFieldModel,
+  UserModel,
+} from "../model/mod.ts";
+import { FieldType } from "../model/mod.ts";
+import { DateScalar } from "../scalar/mod.ts";
+import type { Interface, Node } from "../types.ts";
+import {
+  AnswerInterface,
+  ChoiceAnswerNode,
+  TextAnswerNode,
+  UserNode,
+} from "./mod.ts";
+
+export const FieldTypeEnum = new GraphQLEnumType({
+  name: "FieldType",
+  values: {
+    TEXT: {
+      value: "text",
+    },
+    CHOICE: {
+      value: "choice",
+    },
+  },
+});
+
+export const FieldInterface: Interface = new GraphQLInterfaceType({
+  name: "Field",
+  fields: () => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    type: {
+      type: new GraphQLNonNull(FieldTypeEnum),
+    },
+    creator: {
+      type: new GraphQLNonNull(UserNode),
+    },
+    required: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    question: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    answers: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(AnswerInterface),
+        ),
+      ),
+    },
+    createdAt: {
+      type: new GraphQLNonNull(DateScalar),
+    },
+  }),
+  resolveType({ type }) {
+    switch (type) {
+      case FieldType.TEXT:
+        return "TextField";
+      case FieldType.CHOICE:
+        return "ChoiceField";
+    }
+  },
+});
+
+export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
+  name: "TextField",
+  interfaces: [
+    FieldInterface,
+  ],
+  fields: () => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    type: {
+      type: new GraphQLNonNull(FieldTypeEnum),
+    },
+    creator: {
+      type: new GraphQLNonNull(UserNode),
+      async resolve({ creatorId }, _args, { kv }) {
+        const res = await kv.get<UserModel>(["user", creatorId]);
+
+        if (res.value === null) {
+          throw new GraphQLError(`User with ID ${creatorId} not found`);
+        }
+
+        return res.value;
+      },
+    },
+    required: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    question: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    format: {
+      type: GraphQLString,
+    },
+    sample: {
+      type: GraphQLString,
+    },
+    answers: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(TextAnswerNode),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const iter = kv.list<AnswerModel>({ prefix: ["answer", id] });
+
+        const answers = [];
+        for await (const { value } of iter) {
+          if (value.type !== FieldType.TEXT) {
+            throw new GraphQLError(
+              `Answer to Field with ID ${value.fieldId} from User with ID ${value.respondentId} is not a TextAnswer`,
+            );
+          }
+
+          answers.push(value);
+        }
+
+        return answers;
+      },
+    },
+    createdAt: {
+      type: new GraphQLNonNull(DateScalar),
+    },
+  }),
+});
+
+export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
+  name: "ChoiceField",
+  interfaces: [
+    FieldInterface,
+  ],
+  fields: () => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    type: {
+      type: new GraphQLNonNull(FieldTypeEnum),
+    },
+    creator: {
+      type: new GraphQLNonNull(UserNode),
+      async resolve({ creatorId }, _args, { kv }) {
+        const res = await kv.get<UserModel>(["user", creatorId]);
+
+        if (res.value === null) {
+          throw new GraphQLError(`User with ID ${creatorId} not found`);
+        }
+
+        return res.value;
+      },
+    },
+    required: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    question: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    multiple: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    options: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(GraphQLString),
+        ),
+      ),
+    },
+    answers: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(ChoiceAnswerNode),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const iter = kv.list<AnswerModel>({ prefix: ["answer", id] });
+
+        const answers = [];
+        for await (const { value } of iter) {
+          if (value.type !== FieldType.CHOICE) {
+            throw new GraphQLError(
+              `Answer to Field with ID ${value.fieldId} from User with ID ${value.respondentId} is not a ChoiceAnswer`,
+            );
+          }
+
+          answers.push(value);
+        }
+
+        return answers;
+      },
+    },
+    createdAt: {
+      type: new GraphQLNonNull(DateScalar),
+    },
+  }),
+});
