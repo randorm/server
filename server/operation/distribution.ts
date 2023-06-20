@@ -213,7 +213,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
             return update;
           }
           case DistributionState.CLOSED: {
-            throw new GraphQLError("Distribution is already closed");
+            throw new GraphQLError("Distribution is in CLOSED state");
           }
         }
       },
