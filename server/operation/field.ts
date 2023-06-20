@@ -115,7 +115,7 @@ export const FieldMutation: Operation = new GraphQLObjectType({
 
         const commitRes = await kv.atomic()
           .set(["field", field.id], field)
-          .sum(["field:answer_count", field.id], 0n)
+          .set(["field:answer_count", field.id], new Deno.KvU64(0n))
           .sum(["field_count"], 1n)
           .sum(["field_next_id"], 1n)
           .commit();
@@ -168,7 +168,7 @@ export const FieldMutation: Operation = new GraphQLObjectType({
 
         const commitRes = await kv.atomic()
           .set(["field", field.id], field)
-          .sum(["field:answer_count", field.id], 0n)
+          .set(["field:answer_count", field.id], new Deno.KvU64(0n))
           .sum(["field_count"], 1n)
           .sum(["field_next_id"], 1n)
           .commit();

@@ -142,16 +142,21 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
           assertTextAnswer(answer, fieldRes.value);
 
-          const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
-
-          const commitRes = await kv.atomic()
+          const operation = kv.atomic()
             .check(answerRes)
-            .check(fieldIdsRes)
             .set(["answer", fieldId, user.id], answer)
-            .set(["user:field_ids", user.id], fieldIds)
-            .sum(["user:field_count", fieldId], 1n)
-            .sum(["field:answer_count", fieldId], 1n)
-            .commit();
+            .sum(["field:answer_count", fieldId], 1n);
+
+          if (!fieldIdsRes.value.has(fieldId)) {
+            const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+
+            operation
+              .check(fieldIdsRes)
+              .set(["user:field_ids", user.id], fieldIds)
+              .sum(["user:field_count", fieldId], 1n);
+          }
+
+          const commitRes = await operation.commit();
 
           if (!commitRes.ok) {
             throw new GraphQLError("Failed to create Answer");
@@ -238,16 +243,21 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
           assertChoiceAnswer(answer, fieldRes.value);
 
-          const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
-
-          const commitRes = await kv.atomic()
+          const operation = kv.atomic()
             .check(answerRes)
-            .check(fieldIdsRes)
             .set(["answer", fieldId, user.id], answer)
-            .set(["user:field_ids", user.id], fieldIds)
-            .sum(["user:field_count", fieldId], 1n)
-            .sum(["field:answer_count", fieldId], 1n)
-            .commit();
+            .sum(["field:answer_count", fieldId], 1n);
+
+          if (!fieldIdsRes.value.has(fieldId)) {
+            const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+
+            operation
+              .check(fieldIdsRes)
+              .set(["user:field_ids", user.id], fieldIds)
+              .sum(["user:field_count", fieldId], 1n);
+          }
+
+          const commitRes = await operation.commit();
 
           if (!commitRes.ok) {
             throw new GraphQLError("Failed to create Answer");

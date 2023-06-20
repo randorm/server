@@ -102,8 +102,8 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         const commitRes = await kv.atomic()
           .check(nextIdRes)
           .set(["distribution", distribution.id], distribution)
-          .set(["distribution:field_ids", groupId], new Set())
-          .sum(["distribution:field_count", groupId], 0n)
+          .set(["distribution:field_count", groupId], new Deno.KvU64(0n))
+          .set(["distribution:field_ids", groupId], new Set<number>())
           .sum(["distribution_count"], 1n)
           .sum(["distribution_next_id"], 1n)
           .commit();
@@ -156,8 +156,14 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
             const commitRes = await kv.atomic()
               .check(distributionRes)
               .set(["distribution", distributionId], update)
-              .set(["distribution:participant_ids", distributionId], new Set())
-              .sum(["distribution:participant_count", distributionId], 0n)
+              .set(
+                ["distribution:participant_ids", distributionId],
+                new Set<number>(),
+              )
+              .set(
+                ["distribution:participant_count", distributionId],
+                new Deno.KvU64(0n),
+              )
               .commit();
 
             if (!commitRes.ok) {
@@ -185,8 +191,14 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
               .check(distributionRes)
               .set(["distribution", distributionId], update)
               // TODO: distribute students and notify them
-              .set(["distribution:group_ids", distributionId], new Set())
-              .sum(["distribution:group_count", distributionId], 0n)
+              .set(
+                ["distribution:group_count", distributionId],
+                new Deno.KvU64(0n),
+              )
+              .set(
+                ["distribution:group_ids", distributionId],
+                new Set<number>(),
+              )
               .commit();
 
             if (!commitRes.ok) {

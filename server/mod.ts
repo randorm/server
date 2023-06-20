@@ -53,7 +53,7 @@ const distributionNextIdRes = await kv.get<Deno.KvU64>([
 if (distributionNextIdRes.value === null) {
   distributionOperation
     .check(distributionNextIdRes)
-    .sum(["distribution_next_id"], 1n);
+    .set(["distribution_next_id"], new Deno.KvU64(1n));
 }
 
 const distributionCountRes = await kv.get<Deno.KvU64>(["distribution_count"]);
@@ -61,7 +61,7 @@ const distributionCountRes = await kv.get<Deno.KvU64>(["distribution_count"]);
 if (distributionCountRes.value === null) {
   distributionOperation
     .check(distributionCountRes)
-    .sum(["distribution_count"], 0n);
+    .set(["distribution_count"], new Deno.KvU64(0n));
 }
 
 if (
@@ -83,7 +83,7 @@ const fieldNextIdRes = await kv.get<Deno.KvU64>(["field_next_id"]);
 if (fieldNextIdRes.value === null) {
   fieldOperation
     .check(fieldNextIdRes)
-    .sum(["field_next_id"], 1n);
+    .set(["field_next_id"], new Deno.KvU64(1n));
 }
 
 const fieldCountRes = await kv.get<Deno.KvU64>(["field_count"]);
@@ -91,7 +91,7 @@ const fieldCountRes = await kv.get<Deno.KvU64>(["field_count"]);
 if (fieldCountRes.value === null) {
   fieldOperation
     .check(fieldCountRes)
-    .sum(["field_count"], 0n);
+    .set(["field_count"], new Deno.KvU64(0n));
 }
 
 if (fieldNextIdRes.value === null || fieldCountRes.value === null) {
@@ -111,7 +111,7 @@ const groupNextIdRes = await kv.get<Deno.KvU64>(["group_next_id"]);
 if (groupNextIdRes.value === null) {
   groupOperation
     .check(groupNextIdRes)
-    .sum(["group_next_id"], 1n);
+    .set(["group_next_id"], new Deno.KvU64(1n));
 }
 
 const groupCountRes = await kv.get<Deno.KvU64>(["group_count"]);
@@ -119,7 +119,7 @@ const groupCountRes = await kv.get<Deno.KvU64>(["group_count"]);
 if (groupCountRes.value === null) {
   groupOperation
     .check(groupCountRes)
-    .sum(["group_count"], 0n);
+    .set(["group_count"], new Deno.KvU64(0n));
 }
 
 if (groupNextIdRes.value === null || groupCountRes.value === null) {
@@ -139,7 +139,7 @@ const userNextIdRes = await kv.get<Deno.KvU64>(["user_next_id"]);
 if (userNextIdRes.value === null) {
   userOperation
     .check(userNextIdRes)
-    .sum(["user_next_id"], 1n);
+    .set(["user_next_id"], new Deno.KvU64(1n));
 }
 
 const userCountRes = await kv.get<Deno.KvU64>(["user_count"]);
@@ -147,7 +147,7 @@ const userCountRes = await kv.get<Deno.KvU64>(["user_count"]);
 if (userCountRes.value === null) {
   userOperation
     .check(userCountRes)
-    .sum(["user_count"], 0n);
+    .set(["user_count"], new Deno.KvU64(0n));
 }
 
 if (userNextIdRes.value === null || userCountRes.value === null) {
@@ -181,35 +181,35 @@ if (userRes.value === null) {
     updatedAt: new Date(),
   };
 
-  const firstRes = await kv.atomic()
+  const firstCommitRes = await kv.atomic()
     .check(userRes)
-    .set(["user:viewed_ids", user.id], new Set())
-    .set(["user:subscription_ids", user.id], new Set())
-    .set(["user:subscriber_ids", user.id], new Set())
-    .sum(["user:views", user.id], 0n)
-    .sum(["user:viewed_count", user.id], 0n)
-    .sum(["user:subscription_count", user.id], 0n)
-    .sum(["user:subscriber_count", user.id], 0n)
+    .set(["user:views", user.id], new Deno.KvU64(0n))
+    .set(["user:viewed_count", user.id], new Deno.KvU64(0n))
+    .set(["user:viewed_ids", user.id], new Set<number>())
+    .set(["user:subscription_count", user.id], new Deno.KvU64(0n))
+    .set(["user:subscription_ids", user.id], new Set<number>())
+    .set(["user:subscriber_count", user.id], new Deno.KvU64(0n))
+    .set(["user:subscriber_ids", user.id], new Set<number>())
     .commit();
 
-  if (!firstRes.ok) {
+  if (!firstCommitRes.ok) {
     throw new Error("Failed to setup User");
   }
 
-  const secondRes = await kv.atomic()
+  const secondCommitRes = await kv.atomic()
     .check(userRes)
     .set(["user", user.id], user)
-    .set(["user:field_ids", user.id], new Set())
-    .set(["user:distribution_ids", user.id], new Set())
-    .set(["user:group_ids", user.id], new Set())
-    .sum(["user:field_count", user.id], 0n)
-    .sum(["user:distribution_count", user.id], 0n)
-    .sum(["user:group_count", user.id], 0n)
+    .set(["user:field_count", user.id], new Deno.KvU64(0n))
+    .set(["user:field_ids", user.id], new Set<number>())
+    .set(["user:distribution_count", user.id], new Deno.KvU64(0n))
+    .set(["user:distribution_ids", user.id], new Set<number>())
+    .set(["user:group_count", user.id], new Deno.KvU64(0n))
+    .set(["user:group_ids", user.id], new Set<number>())
     .sum(["user_count"], 1n)
     .sum(["user_next_id"], 1n)
     .commit();
 
-  if (!secondRes.ok) {
+  if (!secondCommitRes.ok) {
     throw new Error("Failed to setup User");
   }
 }
