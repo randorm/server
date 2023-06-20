@@ -45,7 +45,7 @@ const kv = await Deno.openKv();
 
 // Step 3. Setup the database keys.
 
-// Distribution keys
+// Distribution keys.
 
 const distributionOperation = kv.atomic();
 
@@ -77,7 +77,7 @@ if (
   }
 }
 
-// Field keys
+// Field keys.
 
 const fieldOperation = kv.atomic();
 
@@ -105,7 +105,7 @@ if (fieldNextIdRes.value === null || fieldCountRes.value === null) {
   }
 }
 
-// Group keys
+// Group keys.
 
 const groupOperation = kv.atomic();
 
@@ -133,7 +133,7 @@ if (groupNextIdRes.value === null || groupCountRes.value === null) {
   }
 }
 
-// User keys
+// User keys.
 
 const userOperation = kv.atomic();
 
@@ -162,6 +162,8 @@ if (userNextIdRes.value === null || userCountRes.value === null) {
 }
 
 ////////////////////////////////////////////////////////////////
+
+// Auxiliary functions to work with the NodeContext.
 
 async function createUser(
   nextIdRes: Deno.KvEntry<Deno.KvU64>,
@@ -245,6 +247,8 @@ async function createContext(userId: number): Promise<NodeContext> {
 
   return { kv, userRes, user: userRes.value };
 }
+
+// Endpoint.
 
 serve(
   async (req: Request) => {
