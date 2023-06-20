@@ -37,11 +37,13 @@ export const schema = new GraphQLSchema({
 
 ////////////////////////////////////////////////////////////////
 
-// Step 2.1. Create a connection to the database.
+// Step 2. Create a connection to the database.
 
 const kv = await Deno.openKv();
 
-// Step 2.2. Setup the database keys.
+////////////////////////////////////////////////////////////////
+
+// Step 3. Setup the database keys.
 
 // Distribution keys
 
@@ -161,68 +163,89 @@ if (userNextIdRes.value === null || userCountRes.value === null) {
 
 ////////////////////////////////////////////////////////////////
 
-// Step 3. Setup a test User.
+async function createUser(
+  nextIdRes: Deno.KvEntry<Deno.KvU64>,
+  nextId: number,
+): Promise<void> {
+  const isMale = Math.random() > 0.75;
 
-const userRes = await kv.get<UserModel>(["user", 1]);
-
-if (userRes.value === null) {
   const user: UserModel = {
-    id: 1,
-    telegramId: 709491996,
-    username: "machnevegor",
+    id: nextId,
+    telegramId: nextId,
+    username: `user${nextId}`,
     role: Role.EDITOR,
     profile: {
-      firstName: "Egor",
-      lastName: "Machnev",
-      gender: Gender.MALE,
-      birthday: new Date(2004, 8, 28),
-      bio: "Deno, Python, and Rust. Doofenshmirtz Evil Inc.",
+      firstName: isMale ? "John" : "Jane",
+      lastName: "Doe",
+      gender: isMale ? Gender.MALE : Gender.FEMALE,
+      birthday: new Date(),
+      bio: "I'm an applicant of the Innopolis University.",
     },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const firstCommitRes = await kv.atomic()
-    .check(userRes)
-    .set(["user:views", user.id], new Deno.KvU64(0n))
-    .set(["user:viewed_count", user.id], new Deno.KvU64(0n))
-    .set(["user:viewed_ids", user.id], new Set<number>())
-    .set(["user:subscription_count", user.id], new Deno.KvU64(0n))
-    .set(["user:subscription_ids", user.id], new Set<number>())
-    .set(["user:subscriber_count", user.id], new Deno.KvU64(0n))
-    .set(["user:subscriber_ids", user.id], new Set<number>())
+    .check(nextIdRes)
+    .set(["user:views", nextId], new Deno.KvU64(0n))
+    .set(["user:viewed_count", nextId], new Deno.KvU64(0n))
+    .set(["user:viewed_ids", nextId], new Set<number>())
+    .set(["user:subscription_count", nextId], new Deno.KvU64(0n))
+    .set(["user:subscription_ids", nextId], new Set<number>())
+    .set(["user:subscriber_count", nextId], new Deno.KvU64(0n))
+    .set(["user:subscriber_ids", nextId], new Set<number>())
     .commit();
 
   if (!firstCommitRes.ok) {
-    throw new Error("Failed to setup User");
+    throw new Error("Failed to create User");
   }
 
   const secondCommitRes = await kv.atomic()
-    .check(userRes)
-    .set(["user", user.id], user)
-    .set(["user:field_count", user.id], new Deno.KvU64(0n))
-    .set(["user:field_ids", user.id], new Set<number>())
-    .set(["user:distribution_count", user.id], new Deno.KvU64(0n))
-    .set(["user:distribution_ids", user.id], new Set<number>())
-    .set(["user:group_count", user.id], new Deno.KvU64(0n))
-    .set(["user:group_ids", user.id], new Set<number>())
+    .check(nextIdRes)
+    .set(["user", nextId], user)
+    .set(["user:field_count", nextId], new Deno.KvU64(0n))
+    .set(["user:field_ids", nextId], new Set<number>())
+    .set(["user:distribution_count", nextId], new Deno.KvU64(0n))
+    .set(["user:distribution_ids", nextId], new Set<number>())
+    .set(["user:group_count", nextId], new Deno.KvU64(0n))
+    .set(["user:group_ids", nextId], new Set<number>())
     .sum(["user_count"], 1n)
     .sum(["user_next_id"], 1n)
     .commit();
 
   if (!secondCommitRes.ok) {
-    throw new Error("Failed to setup User");
+    throw new Error("Failed to create User");
   }
 }
 
-////////////////////////////////////////////////////////////////
+async function getUserRes(userId: number): Promise<Deno.KvEntry<UserModel>> {
+  const nextIdRes = await kv.get<Deno.KvU64>(["user_next_id"]);
 
-async function createContext(): Promise<NodeContext> {
-  const userRes = await kv.get<UserModel>(["user", 1]);
+  if (nextIdRes.value === null) {
+    throw new GraphQLError("Next User ID not found");
+  }
+
+  const nextId = Number(nextIdRes.value);
+
+  if (userId > nextId) {
+    throw new GraphQLError(`User with ID ${userId} not found`);
+  }
+
+  if (userId === nextId) {
+    await createUser(nextIdRes, nextId);
+  }
+
+  const userRes = await kv.get<UserModel>(["user", userId]);
 
   if (userRes.value === null) {
-    throw new GraphQLError("Test User not found");
+    throw new GraphQLError(`User with ID ${userId} not found`);
   }
+
+  return userRes;
+}
+
+async function createContext(userId: number): Promise<NodeContext> {
+  const userRes = await getUserRes(userId);
 
   return { kv, userRes, user: userRes.value };
 }
@@ -232,19 +255,35 @@ serve(
     switch (req.method) {
       case "GET":
         return new Response(
-          renderPlaygroundPage({ endpoint: "/" }),
+          renderPlaygroundPage({ endpoint: req.url }),
           { headers: { "content-type": "text/html" } },
         );
       case "POST": {
         const data = await req.json();
 
         try {
+          const header = req.headers.get("Authorization");
+
+          let userId = 1;
+          if (header) {
+            const parts = header.split(" ");
+
+            if (parts.length !== 2) {
+              return new Response(
+                "Invalid Authorization Header",
+                { status: Status.Unauthorized },
+              );
+            }
+
+            userId = Number(parts[1]);
+          }
+
           const result = await graphql({
             schema,
             source: data.query,
             variableValues: data.variables,
             operationName: data.operationName,
-            contextValue: await createContext(),
+            contextValue: await createContext(userId),
           });
 
           return Response.json(result);
