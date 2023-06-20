@@ -163,7 +163,7 @@ if (userNextIdRes.value === null || userCountRes.value === null) {
 
 ////////////////////////////////////////////////////////////////
 
-// Auxiliary functions to work with the NodeContext.
+// NodeContext.
 
 async function createUser(
   nextIdRes: Deno.KvEntry<Deno.KvU64>,
