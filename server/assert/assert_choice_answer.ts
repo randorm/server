@@ -6,17 +6,21 @@ export function assertChoiceAnswer(
   field: ChoiceFieldModel,
 ) {
   if (!answer.value.size) {
-    throw new GraphQLError(`Answer to Field with ID ${field.id} is empty`);
+    throw new GraphQLError(
+      `Answer to ChoiceField with ID ${field.id} is empty`,
+    );
   }
 
   if (!field.multiple && answer.value.size > 1) {
-    throw new GraphQLError(`Answer to Field with ID ${field.id} is multiple`);
+    throw new GraphQLError(
+      `Answer to ChoiceField with ID ${field.id} is multiple`,
+    );
   }
 
   for (const optionIndex of answer.value) {
     if (0 > optionIndex || optionIndex >= field.options.length) {
       throw new GraphQLError(
-        `Answer to Field with ID ${field.id} contains invalid option index ${optionIndex}`,
+        `Answer to ChoiceField with ID ${field.id} contains invalid option index ${optionIndex}`,
       );
     }
   }

@@ -121,7 +121,7 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           .commit();
 
         if (!commitRes.ok) {
-          throw new GraphQLError("Failed to create Field");
+          throw new GraphQLError("Failed to create TextField");
         }
 
         return field;
@@ -174,7 +174,7 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           .commit();
 
         if (!commitRes.ok) {
-          throw new GraphQLError("Failed to create Field");
+          throw new GraphQLError("Failed to create ChoiceField");
         }
 
         return field;

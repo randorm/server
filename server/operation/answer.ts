@@ -159,7 +159,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           const commitRes = await operation.commit();
 
           if (!commitRes.ok) {
-            throw new GraphQLError("Failed to create Answer");
+            throw new GraphQLError("Failed to create TextAnswer");
           }
 
           return { user, answer, field: fieldRes.value };
@@ -180,7 +180,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         if (!commitRes.ok) {
           throw new GraphQLError(
-            `Failed to update Answer to Field with ID ${fieldId} from User with ID ${user.id}`,
+            `Failed to update TextAnswer to TextField with ID ${fieldId} from User with ID ${user.id}`,
           );
         }
 
@@ -260,7 +260,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           const commitRes = await operation.commit();
 
           if (!commitRes.ok) {
-            throw new GraphQLError("Failed to create Answer");
+            throw new GraphQLError("Failed to create ChoiceAnswer");
           }
 
           return { user, answer, field: fieldRes.value };
@@ -281,7 +281,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         if (!commitRes.ok) {
           throw new GraphQLError(
-            `Failed to update Answer to Field with ID ${fieldId} from User with ID ${user.id}`,
+            `Failed to update ChoiceAnswer to ChoiceField with ID ${fieldId} from User with ID ${user.id}`,
           );
         }
 

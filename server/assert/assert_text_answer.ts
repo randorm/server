@@ -7,13 +7,13 @@ export function assertTextAnswer(
 ) {
   if (!answer.value) {
     throw new GraphQLError(
-      `Answer to Field with ID ${field.id} from User with ID ${answer.respondentId} is empty`,
+      `Answer to TextField with ID ${field.id} from User with ID ${answer.respondentId} is empty`,
     );
   }
 
   if (field.format && !new RegExp(field.format).test(answer.value)) {
     throw new GraphQLError(
-      `Answer to Field with ID ${field.id} from User with ID ${answer.respondentId} does not match format`,
+      `Answer to TextField with ID ${field.id} from User with ID ${answer.respondentId} does not match format`,
     );
   }
 }
