@@ -145,22 +145,24 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        // TODO: maybe GraphQLError?
-        if (viewedIdsRes.value.has(userId)) {
-          return { user: userRes.value, viewer: user };
+        const operation = kv.atomic()
+          .sum(["user:views", userId], 1n);
+
+        if (!viewedIdsRes.value.has(userId)) {
+          const viewedIds = new Set<number>([...viewedIdsRes.value, userId]);
+
+          operation
+            .check(viewedIdsRes)
+            .set(["user:viewed_ids", user.id], viewedIds)
+            .sum(["user:viewed_count", user.id], 1n);
         }
 
-        const viewedIds = new Set<number>([...viewedIdsRes.value, userId]);
-
-        const commitRes = await kv.atomic()
-          .check(viewedIdsRes)
-          .set(["user:viewed_ids", user.id], viewedIds)
-          .sum(["user:viewed_count", user.id], 1n)
-          .sum(["user:views", userId], 1n)
-          .commit();
+        const commitRes = await operation.commit();
 
         if (!commitRes.ok) {
-          throw new GraphQLError(`Failed to update User with ID ${userId}`);
+          throw new GraphQLError(
+            `Failed to mark User with ID ${userId} viewed`,
+          );
         }
 
         return { user: userRes.value, viewer: user };
@@ -211,6 +213,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
         const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
+        // TODO(machnevegor): maybe return a different type of update
         if (inSubscriptions && inSubscribers) {
           return { user: userRes.value, subscriber: user };
         }
@@ -266,15 +269,21 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
         const [
           userRes,
+          subscriptionCountRes,
           subscriptionIdsRes,
+          subscriberCountRes,
           subscriberIdsRes,
         ] = await kv.getMany<[
           UserModel,
+          Deno.KvU64,
           Set<number>,
+          Deno.KvU64,
           Set<number>,
         ]>([
           ["user", userId],
+          ["user:subscription_count", user.id],
           ["user:subscription_ids", user.id],
+          ["user:subscriber_count", userId],
           ["user:subscriber_ids", userId],
         ]);
 
@@ -282,9 +291,21 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
 
+        if (subscriptionCountRes.value === null) {
+          throw new GraphQLError(
+            `Subscription count of User with ID ${user.id} not found`,
+          );
+        }
+
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
             `Subscription IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        if (subscriberCountRes.value === null) {
+          throw new GraphQLError(
+            `Subscriber count of User with ID ${userId} not found`,
           );
         }
 
@@ -297,6 +318,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
         const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
+        // TODO(machnevegor): maybe return a different type of update
         if (!inSubscriptions && !inSubscribers) {
           return { user: userRes.value, unsubscriber: user };
         }
@@ -309,6 +331,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
 
           operation
+            .check(subscriptionCountRes)
             .check(subscriptionIdsRes)
             .set(
               ["user:subscription_count", user.id],
@@ -323,6 +346,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
 
           operation
+            .check(subscriberCountRes)
             .check(subscriberIdsRes)
             .set(
               ["user:subscriber_count", userId],
