@@ -4,7 +4,7 @@ export interface BaseAnswerModel {
   readonly fieldId: number;
   readonly respondentId: number;
   readonly type: FieldType;
-  readonly creadtedAt: Date;
+  readonly createdAt: Date;
   updatedAt: Date;
 }
 

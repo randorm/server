@@ -139,7 +139,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             respondentId: user.id,
             type: FieldType.TEXT,
             value,
-            creadtedAt: new Date(),
+            createdAt: new Date(),
             updatedAt: new Date(),
           };
 
@@ -243,7 +243,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             respondentId: user.id,
             type: FieldType.CHOICE,
             value,
-            creadtedAt: new Date(),
+            createdAt: new Date(),
             updatedAt: new Date(),
           };
 
