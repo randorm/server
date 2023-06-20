@@ -79,7 +79,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLString),
         },
       },
-      async resolve(_root, { groupId, name }, { user, kv }) {
+      async resolve(_root, { name }, { user, kv }) {
         assertEditor(user);
 
         const nextIdRes = await kv.get<Deno.KvU64>(["distribution_next_id"]);
@@ -102,8 +102,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         const commitRes = await kv.atomic()
           .check(nextIdRes)
           .set(["distribution", distribution.id], distribution)
-          .set(["distribution:field_count", groupId], new Deno.KvU64(0n))
-          .set(["distribution:field_ids", groupId], new Set<number>())
+          .set(
+            ["distribution:field_count", distribution.id],
+            new Deno.KvU64(0n),
+          )
+          .set(["distribution:field_ids", distribution.id], new Set<number>())
           .sum(["distribution_count"], 1n)
           .sum(["distribution_next_id"], 1n)
           .commit();
