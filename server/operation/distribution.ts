@@ -277,9 +277,18 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
       async resolve(_root, { distributionId, fieldId }, { user, kv }) {
         assertEditor(user);
 
-        const distributionRes = await kv.get<DistributionModel>([
-          "distribution",
-          distributionId,
+        const [
+          distributionRes,
+          fieldRes,
+          fieldIdsRes,
+        ] = await kv.getMany<[
+          DistributionModel,
+          FieldModel,
+          Set<number>,
+        ]>([
+          ["distribution", distributionId],
+          ["field", fieldId],
+          ["distribution:field_ids", distributionId],
         ]);
 
         if (distributionRes.value === null) {
@@ -294,16 +303,9 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
-
         if (fieldRes.value === null) {
           throw new GraphQLError(`Field with ID ${fieldId} not found`);
         }
-
-        const fieldIdsRes = await kv.get<Set<number>>([
-          "distribution:field_ids",
-          distributionId,
-        ]);
 
         if (fieldIdsRes.value === null) {
           throw new GraphQLError(
@@ -347,9 +349,18 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
       async resolve(_root, { distributionId, fieldId }, { user, kv }) {
         assertEditor(user);
 
-        const distributionRes = await kv.get<DistributionModel>([
-          "distribution",
-          distributionId,
+        const [
+          distributionRes,
+          fieldCountRes,
+          fieldIdsRes,
+        ] = await kv.getMany<[
+          DistributionModel,
+          Deno.KvU64,
+          Set<number>,
+        ]>([
+          ["distribution", distributionId],
+          ["distribution:field_count", distributionId],
+          ["distribution:field_ids", distributionId],
         ]);
 
         if (distributionRes.value === null) {
@@ -364,14 +375,15 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const fieldIdsRes = await kv.get<Set<number>>([
-          "distribution:field_ids",
-          distributionId,
-        ]);
+        if (fieldCountRes.value === null) {
+          throw new GraphQLError(
+            `Field count of Distribution with ID ${distributionId} not found`,
+          );
+        }
 
         if (fieldIdsRes.value === null) {
           throw new GraphQLError(
-            `Distribution with ID ${distributionId} not found`,
+            `Field IDs of Distribution with ID ${distributionId} not found`,
           );
         }
 
@@ -381,14 +393,16 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const fieldIds = new Set(
-          [...fieldIdsRes.value].filter((id) => id !== fieldId),
-        );
+        const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
 
         const commitRes = await kv.atomic()
+          .check(fieldCountRes)
           .check(fieldIdsRes)
+          .set(
+            ["distribution:field_count", distributionId],
+            new Deno.KvU64(BigInt(fieldIds.size)),
+          )
           .set(["distribution:field_ids", distributionId], fieldIds)
-          .sum(["distribution:field_count", distributionId], -1n)
           .commit();
 
         if (!commitRes.ok) {
@@ -432,8 +446,6 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           .delete(["distribution", distributionId])
           .delete(["distribution:field_ids", distributionId])
           .delete(["distribution:field_count", distributionId])
-          // TODO: send new distribution count to user
-          .sum(["user:distribution_count", user.id], -1n)
           .commit();
 
         if (!commitRes.ok) {

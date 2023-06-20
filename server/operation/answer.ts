@@ -101,7 +101,16 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
         },
       },
       async resolve(_root, { fieldId, value }, { kv, user }) {
-        const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const [
+          fieldRes,
+          answerRes,
+        ] = await kv.getMany<[
+          FieldModel,
+          TextAnswerModel,
+        ]>([
+          ["field", fieldId],
+          ["answer", fieldId, user.id],
+        ]);
 
         if (fieldRes.value === null) {
           throw new GraphQLError(`Field with ID ${fieldId} not found`);
@@ -112,12 +121,6 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             `Field with ID ${fieldRes.value.id} is not a TextField`,
           );
         }
-
-        const answerRes = await kv.get<TextAnswerModel>([
-          "answer",
-          fieldId,
-          user.id,
-        ]);
 
         if (answerRes.value === null) {
           const fieldIdsRes = await kv.get<Set<number>>([
@@ -202,7 +205,16 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
         },
       },
       async resolve(_root, { fieldId, value }, { kv, user }) {
-        const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const [
+          fieldRes,
+          answerRes,
+        ] = await kv.getMany<[
+          FieldModel,
+          ChoiceAnswerModel,
+        ]>([
+          ["field", fieldId],
+          ["answer", fieldId, user.id],
+        ]);
 
         if (fieldRes.value === null) {
           throw new GraphQLError(`Field with ID ${fieldId} not found`);
@@ -213,12 +225,6 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             `Field with ID ${fieldRes.value.id} is not a ChoiceField`,
           );
         }
-
-        const answerRes = await kv.get<ChoiceAnswerModel>([
-          "answer",
-          fieldId,
-          user.id,
-        ]);
 
         if (answerRes.value === null) {
           const fieldIdsRes = await kv.get<Set<number>>([

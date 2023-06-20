@@ -124,16 +124,20 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError("User cannot view themselves");
         }
 
-        const userRes = await kv.get<UserModel>(["user", userId]);
+        const [
+          userRes,
+          viewedIdsRes,
+        ] = await kv.getMany<[
+          UserModel,
+          Set<number>,
+        ]>([
+          ["user", userId],
+          ["user:viewed_ids", user.id],
+        ]);
 
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
-        const viewedIdsRes = await kv.get<Set<number>>([
-          "user:viewed_ids",
-          user.id,
-        ]);
 
         if (viewedIdsRes.value === null) {
           throw new GraphQLError(
@@ -141,6 +145,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
+        // TODO: maybe GraphQLError?
         if (viewedIdsRes.value.has(userId)) {
           return { user: userRes.value, viewer: user };
         }
@@ -173,16 +178,23 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError("User cannot subscribe to themselves");
         }
 
-        const userRes = await kv.get<UserModel>(["user", userId]);
+        const [
+          userRes,
+          subscriptionIdsRes,
+          subscriberIdsRes,
+        ] = await kv.getMany<[
+          UserModel,
+          Set<number>,
+          Set<number>,
+        ]>([
+          ["user", userId],
+          ["user:subscription_ids", user.id],
+          ["user:subscriber_ids", userId],
+        ]);
 
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
-        const subscriptionIdsRes = await kv.get<Set<number>>([
-          "user:subscription_ids",
-          user.id,
-        ]);
 
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
@@ -190,19 +202,13 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const inSubscriptions = subscriptionIdsRes.value.has(userId);
-
-        const subscriberIdsRes = await kv.get<Set<number>>([
-          "user:subscriber_ids",
-          userId,
-        ]);
-
         if (subscriberIdsRes.value === null) {
           throw new GraphQLError(
             `Subscriber IDs of User with ID ${userId} not found`,
           );
         }
 
+        const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
         if (inSubscriptions && inSubscribers) {
@@ -258,16 +264,23 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError("User cannot unsubscribe from themselves");
         }
 
-        const userRes = await kv.get<UserModel>(["user", userId]);
+        const [
+          userRes,
+          subscriptionIdsRes,
+          subscriberIdsRes,
+        ] = await kv.getMany<[
+          UserModel,
+          Set<number>,
+          Set<number>,
+        ]>([
+          ["user", userId],
+          ["user:subscription_ids", user.id],
+          ["user:subscriber_ids", userId],
+        ]);
 
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
-        const subscriptionIdsRes = await kv.get<Set<number>>([
-          "user:subscription_ids",
-          user.id,
-        ]);
 
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
@@ -275,19 +288,13 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const inSubscriptions = subscriptionIdsRes.value.has(userId);
-
-        const subscriberIdsRes = await kv.get<Set<number>>([
-          "user:subscriber_ids",
-          userId,
-        ]);
-
         if (subscriberIdsRes.value === null) {
           throw new GraphQLError(
             `Subscriber IDs of User with ID ${userId} not found`,
           );
         }
 
+        const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
         if (!inSubscriptions && !inSubscribers) {
@@ -303,8 +310,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
           operation
             .check(subscriptionIdsRes)
-            .set(["user:subscription_ids", user.id], subscriptionIds)
-            .sum(["user:subscription_count", user.id], -1n);
+            .set(
+              ["user:subscription_count", user.id],
+              new Deno.KvU64(BigInt(subscriptionIds.size)),
+            )
+            .set(["user:subscription_ids", user.id], subscriptionIds);
         }
 
         if (inSubscribers) {
@@ -314,8 +324,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
           operation
             .check(subscriberIdsRes)
-            .set(["user:subscriber_ids", userId], subscriberIds)
-            .sum(["user:subscriber_count", userId], -1n);
+            .set(
+              ["user:subscriber_count", userId],
+              new Deno.KvU64(BigInt(subscriberIds.size)),
+            )
+            .set(["user:subscriber_ids", userId], subscriberIds);
         }
 
         const commitRes = await operation.commit();
