@@ -15,6 +15,7 @@ import {
   TextAnswerNode,
   TextFieldNode,
 } from "./type/mod.ts";
+import type { NodeContext } from "./types.ts";
 
 ////////////////////////////////////////////////////////////////
 
@@ -216,6 +217,16 @@ if (userRes.value === null) {
 
 ////////////////////////////////////////////////////////////////
 
+async function createContext(): Promise<NodeContext> {
+  const userRes = await kv.get<UserModel>(["user", 1]);
+
+  if (userRes.value === null) {
+    throw new GraphQLError("Test User not found");
+  }
+
+  return { kv, userRes, user: userRes.value };
+}
+
 serve(
   async (req: Request) => {
     switch (req.method) {
@@ -227,23 +238,13 @@ serve(
       case "POST": {
         const data = await req.json();
 
-        const userRes = await kv.get<UserModel>(["user", 1]);
-
         try {
-          if (userRes.value === null) {
-            throw new GraphQLError("Test User not found");
-          }
-
           const result = await graphql({
             schema,
             source: data.query,
             variableValues: data.variables,
             operationName: data.operationName,
-            contextValue: {
-              kv,
-              userRes,
-              user: userRes.value,
-            },
+            contextValue: await createContext(),
           });
 
           return Response.json(result);
