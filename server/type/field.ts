@@ -117,17 +117,12 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
     },
     answerCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      args: {
-        fieldId: {
-          type: new GraphQLNonNull(GraphQLInt),
-        },
-      },
-      async resolve(_root, { fieldId }, { kv }) {
-        const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>(["field:answer_count", id]);
 
         if (res.value === null) {
           throw new GraphQLError(
-            `Answer count to Field with ID ${fieldId} not found`,
+            `Answer count to Field with ID ${id} not found`,
           );
         }
 
@@ -147,7 +142,7 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
         for await (const { value } of iter) {
           if (value.type !== FieldType.TEXT) {
             throw new GraphQLError(
-              `Answer to Field with ID ${value.fieldId} from User with ID ${value.respondentId} is not a TextAnswer`,
+              `Answer to TextField with ID ${value.fieldId} from User with ID ${value.respondentId} is not a TextAnswer`,
             );
           }
 
@@ -205,17 +200,12 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
     },
     answerCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      args: {
-        fieldId: {
-          type: new GraphQLNonNull(GraphQLInt),
-        },
-      },
-      async resolve(_root, { fieldId }, { kv }) {
-        const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>(["field:answer_count", id]);
 
         if (res.value === null) {
           throw new GraphQLError(
-            `Answer count to Field with ID ${fieldId} not found`,
+            `Answer count to ChoiceField with ID ${id} not found`,
           );
         }
 
@@ -235,7 +225,7 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
         for await (const { value } of iter) {
           if (value.type !== FieldType.CHOICE) {
             throw new GraphQLError(
-              `Answer to Field with ID ${value.fieldId} from User with ID ${value.respondentId} is not a ChoiceAnswer`,
+              `Answer to ChoiceField with ID ${value.fieldId} from User with ID ${value.respondentId} is not a ChoiceAnswer`,
             );
           }
 
