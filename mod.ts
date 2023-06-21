@@ -302,6 +302,8 @@ serve(
           );
         }
       }
+      case "OPTIONS":
+        return new Response(null, { headers: CORS });
       default:
         return new Response(
           "Method Not Allowed",
