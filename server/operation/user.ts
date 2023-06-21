@@ -124,10 +124,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError("User cannot view themselves");
         }
 
-        const [
-          userRes,
-          viewedIdsRes,
-        ] = await kv.getMany<[
+        const [userRes, viewedIdsRes] = await kv.getMany<[
           UserModel,
           Set<number>,
         ]>([
