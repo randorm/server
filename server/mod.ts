@@ -248,6 +248,14 @@ async function createContext(userId: number): Promise<NodeContext> {
   return { kv, userRes, user: userRes.value };
 }
 
+// CORS headers.
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization",
+};
+
 // Endpoint.
 
 serve(
@@ -286,18 +294,18 @@ serve(
             contextValue: await createContext(userId),
           });
 
-          return Response.json(result);
+          return Response.json(result, { headers: CORS });
         } catch (e) {
           return Response.json(
             { errros: [e], data: null },
-            { status: Status.BadRequest },
+            { status: Status.BadRequest, headers: CORS },
           );
         }
       }
       default:
         return new Response(
           "Method Not Allowed",
-          { status: Status.MethodNotAllowed },
+          { status: Status.MethodNotAllowed, headers: CORS },
         );
     }
   },
