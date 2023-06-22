@@ -160,12 +160,16 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
               .check(distributionRes)
               .set(["distribution", distributionId], update)
               .set(
-                ["distribution:participant_ids", distributionId],
+                ["distribution:participant_count", distributionId],
+                new Deno.KvU64(0n),
+              )
+              .set(
+                ["distribution:male_participant_ids", distributionId],
                 new Set<number>(),
               )
               .set(
-                ["distribution:participant_count", distributionId],
-                new Deno.KvU64(0n),
+                ["distribution:female_participant_ids", distributionId],
+                new Set<number>(),
               )
               .commit();
 
