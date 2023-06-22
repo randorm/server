@@ -1,7 +1,7 @@
 import { GraphQLError } from "../deps.ts";
 import type { DistributionModel, UserModel } from "../model/mod.ts";
 import { DistributionState, Gender } from "../model/mod.ts";
-import { getMany, idifference, limit } from "../utils/mod.ts";
+import { difference, getMany, idifference, limit } from "../utils/mod.ts";
 
 export async function recommend(
   user: UserModel,
@@ -72,13 +72,11 @@ export async function recommend(
     );
   }
 
-  const excludedIds = new Set<number>([
-    ...subscriptionIdsRes.value,
-    ...viewedIdsRes.value,
-  ]);
-
   const subscriberIds = limit(
-    idifference(subscriberIdsRes.value, excludedIds),
+    idifference(
+      difference(subscriberIdsRes.value, subscriptionIdsRes.value),
+      viewedIdsRes.value,
+    ),
     amount,
   );
 
@@ -93,7 +91,10 @@ export async function recommend(
   }
 
   const participantIds = limit(
-    idifference(participantIdsRes.value, excludedIds),
+    idifference(
+      difference(participantIdsRes.value, subscriptionIdsRes.value),
+      viewedIdsRes.value,
+    ),
     amount,
   );
 
