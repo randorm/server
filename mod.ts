@@ -248,7 +248,9 @@ async function createContext(userId: number): Promise<NodeContext> {
   return { kv, userRes, user: userRes.value };
 }
 
-// CORS headers.
+// Endpoint config.
+
+const PORT = 3000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -311,5 +313,5 @@ serve(
         );
     }
   },
-  { port: 3000 },
+  { port: PORT },
 );
