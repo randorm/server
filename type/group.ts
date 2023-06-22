@@ -40,15 +40,20 @@ export const GroupNode: Node<GroupModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ memberIds }, _args, { kv }) {
-        const members = [];
-        for (const memberId of memberIds) {
-          const res = await kv.get<UserModel>(["user", memberId]);
+        const memberKeySet = [...memberIds].map(
+          (memberId) => ["user", memberId],
+        );
+        const memberResSet = await kv.getMany<UserModel[]>(memberKeySet);
 
-          if (res.value === null) {
-            throw new GraphQLError(`User with ID ${memberId} not found`);
+        const members = [];
+        for (const memberRes of memberResSet) {
+          if (memberRes.value === null) {
+            const [_part, userId] = memberRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          members.push(res.value);
+          members.push(memberRes.value);
         }
 
         return members;

@@ -139,11 +139,16 @@ export const PreparingDistributionNode: Node<
           );
         }
 
-        const fields = [];
-        for (const fieldId of fieldIdsRes.value) {
-          const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const fieldKeySet = [...fieldIdsRes.value].map(
+          (fieldId) => ["field", fieldId],
+        );
+        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
 
+        const fields = [];
+        for (const fieldRes of fieldResSet) {
           if (fieldRes.value === null) {
+            const [_part, fieldId] = fieldRes.key;
+
             throw new GraphQLError(`Field with ID ${fieldId} not found`);
           }
 
@@ -223,11 +228,16 @@ export const GatheringDistributionNode: Node<
           );
         }
 
-        const fields = [];
-        for (const fieldId of fieldIdsRes.value) {
-          const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const fieldKeySet = [...fieldIdsRes.value].map(
+          (fieldId) => ["field", fieldId],
+        );
+        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
 
+        const fields = [];
+        for (const fieldRes of fieldResSet) {
           if (fieldRes.value === null) {
+            const [_part, fieldId] = fieldRes.key;
+
             throw new GraphQLError(`Field with ID ${fieldId} not found`);
           }
 
@@ -288,15 +298,22 @@ export const GatheringDistributionNode: Node<
           ...femaleParticipantIdsRes.value,
         ]);
 
-        const participants = [];
-        for (const participantId of participantIds) {
-          const userRes = await kv.get<UserModel>(["user", participantId]);
+        const participantKeySet = [...participantIds].map(
+          (userId) => ["user", userId],
+        );
+        const participantResSet = await kv.getMany<UserModel[]>(
+          participantKeySet,
+        );
 
-          if (userRes.value === null) {
-            throw new GraphQLError(`User with ID ${participantId} not found`);
+        const participants = [];
+        for (const participantRes of participantResSet) {
+          if (participantRes.value === null) {
+            const [_part, userId] = participantRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          participants.push(userRes.value);
+          participants.push(participantRes.value);
         }
 
         return participants;
@@ -372,11 +389,16 @@ export const ClosedDistributionNode: Node<
           );
         }
 
-        const fields = [];
-        for (const fieldId of fieldIdsRes.value) {
-          const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const fieldKeySet = [...fieldIdsRes.value].map(
+          (fieldId) => ["field", fieldId],
+        );
+        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
 
+        const fields = [];
+        for (const fieldRes of fieldResSet) {
           if (fieldRes.value === null) {
+            const [_part, fieldId] = fieldRes.key;
+
             throw new GraphQLError(`Field with ID ${fieldId} not found`);
           }
 
@@ -437,15 +459,22 @@ export const ClosedDistributionNode: Node<
           ...femaleParticipantIdsRes.value,
         ]);
 
-        const participants = [];
-        for (const participantId of participantIds) {
-          const userRes = await kv.get<UserModel>(["user", participantId]);
+        const participantKeySet = [...participantIds].map(
+          (userId) => ["user", userId],
+        );
+        const participantResSet = await kv.getMany<UserModel[]>(
+          participantKeySet,
+        );
 
-          if (userRes.value === null) {
-            throw new GraphQLError(`User with ID ${participantId} not found`);
+        const participants = [];
+        for (const participantRes of participantResSet) {
+          if (participantRes.value === null) {
+            const [_part, userId] = participantRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          participants.push(userRes.value);
+          participants.push(participantRes.value);
         }
 
         return participants;
@@ -483,11 +512,16 @@ export const ClosedDistributionNode: Node<
           );
         }
 
-        const groups = [];
-        for (const groupId of groupIdsRes.value) {
-          const groupRes = await kv.get<GroupModel>(["group", groupId]);
+        const groupKeySet = [...groupIdsRes.value].map(
+          (groupId) => ["group", groupId],
+        );
+        const groupResSet = await kv.getMany<GroupModel[]>(groupKeySet);
 
+        const groups = [];
+        for (const groupRes of groupResSet) {
           if (groupRes.value === null) {
+            const [_part, groupId] = groupRes.key;
+
             throw new GraphQLError(`Group with ID ${groupId} not found`);
           }
 

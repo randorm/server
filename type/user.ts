@@ -126,15 +126,20 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Viewed IDs of User with ID ${id} not found`);
         }
 
-        const viewed = [];
-        for (const viewedId of viewedIdsRes.value) {
-          const userRes = await kv.get<UserModel>(["user", viewedId]);
+        const viewedKeySet = [...viewedIdsRes.value].map(
+          (viewedId) => ["user", viewedId],
+        );
+        const viewedResSet = await kv.getMany<UserModel[]>(viewedKeySet);
 
-          if (userRes.value === null) {
-            throw new GraphQLError(`User with ID ${viewedId} not found`);
+        const viewed = [];
+        for (const viewedRes of viewedResSet) {
+          if (viewedRes.value === null) {
+            const [_part, userId] = viewedRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          viewed.push(userRes.value);
+          viewed.push(viewedRes.value);
         }
 
         return viewed;
@@ -174,15 +179,22 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const subscriptions = [];
-        for (const subscriptionId of subscriptionIdsRes.value) {
-          const userRes = await kv.get<UserModel>(["user", subscriptionId]);
+        const subscriptionKeySet = [...subscriptionIdsRes.value].map(
+          (userId) => ["user", userId],
+        );
+        const subscriptionResSet = await kv.getMany<UserModel[]>(
+          subscriptionKeySet,
+        );
 
-          if (userRes.value === null) {
-            throw new GraphQLError(`User with ID ${subscriptionId} not found`);
+        const subscriptions = [];
+        for (const subscriptionRes of subscriptionResSet) {
+          if (subscriptionRes.value === null) {
+            const [_part, userId] = subscriptionRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          subscriptions.push(userRes.value);
+          subscriptions.push(subscriptionRes.value);
         }
 
         return subscriptions;
@@ -222,15 +234,22 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const subscribers = [];
-        for (const subscriberId of subscriberIdsRes.value) {
-          const userRes = await kv.get<UserModel>(["user", subscriberId]);
+        const subscriberKeySet = [...subscriberIdsRes.value].map(
+          (userId) => ["user", userId],
+        );
+        const subscriberResSet = await kv.getMany<UserModel[]>(
+          subscriberKeySet,
+        );
 
-          if (userRes.value === null) {
-            throw new GraphQLError(`User with ID ${subscriberId} not found`);
+        const subscribers = [];
+        for (const subscriberRes of subscriberResSet) {
+          if (subscriberRes.value === null) {
+            const [_part, userId] = subscriberRes.key;
+
+            throw new GraphQLError(`User with ID ${userId} not found`);
           }
 
-          subscribers.push(userRes.value);
+          subscribers.push(subscriberRes.value);
         }
 
         return subscribers;
@@ -261,11 +280,16 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Field IDs of User with ID ${id} not found`);
         }
 
-        const fields = [];
-        for (const fieldId of fieldIdsRes.value) {
-          const fieldRes = await kv.get<FieldModel>(["field", fieldId]);
+        const fieldKeySet = [...fieldIdsRes.value].map(
+          (fieldId) => ["field", fieldId],
+        );
+        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
 
+        const fields = [];
+        for (const fieldRes of fieldResSet) {
           if (fieldRes.value === null) {
+            const [_part, fieldId] = fieldRes.key;
+
             throw new GraphQLError(`Field with ID ${fieldId} not found`);
           }
 
@@ -288,13 +312,18 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Field IDs of User with ID ${id} not found`);
         }
 
-        const answers = [];
-        for (const fieldId of fieldIdsRes.value) {
-          const answerRes = await kv.get<AnswerModel>(["answer", fieldId, id]);
+        const answerKeySet = [...fieldIdsRes.value].map(
+          (fieldId) => ["answer", fieldId, id],
+        );
+        const answerResSet = await kv.getMany<AnswerModel[]>(answerKeySet);
 
+        const answers = [];
+        for (const answerRes of answerResSet) {
           if (answerRes.value === null) {
+            const [_part, fieldId, userId] = answerRes.key;
+
             throw new GraphQLError(
-              `Answer to Field with ID ${fieldId} from User with ID ${id} not found`,
+              `Answer to Field with ID ${fieldId} from User with ID ${userId} not found`,
             );
           }
 
@@ -336,14 +365,18 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const distributions = [];
-        for (const distributionId of distributionIdsRes.value) {
-          const distributionRes = await kv.get<DistributionModel>([
-            "distribution",
-            distributionId,
-          ]);
+        const distributionKeySet = [...distributionIdsRes.value].map(
+          (distributionId) => ["distribution", distributionId],
+        );
+        const distributionResSet = await kv.getMany<DistributionModel[]>(
+          distributionKeySet,
+        );
 
+        const distributions = [];
+        for (const distributionRes of distributionResSet) {
           if (distributionRes.value === null) {
+            const [_part, distributionId] = distributionRes.key;
+
             throw new GraphQLError(
               `Distribution with ID ${distributionId} not found`,
             );
@@ -380,11 +413,16 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Group IDs of User with ID ${id} not found`);
         }
 
-        const groups = [];
-        for (const groupId of groupIdsRes.value) {
-          const groupRes = await kv.get<GroupModel>(["group", groupId]);
+        const groupKeySet = [...groupIdsRes.value].map(
+          (groupId) => ["group", groupId],
+        );
+        const groupResSet = await kv.getMany<GroupModel[]>(groupKeySet);
 
+        const groups = [];
+        for (const groupRes of groupResSet) {
           if (groupRes.value === null) {
+            const [_part, groupId] = groupRes.key;
+
             throw new GraphQLError(`Group with ID ${groupId} not found`);
           }
 
