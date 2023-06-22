@@ -109,6 +109,7 @@ export async function recommend(
   }
 
   const viewedIds = limit(
+    // TODO(machnevegor): shuffle viewedIdsRes.value
     idifference(viewedIdsRes.value, subscriptionIdsRes.value),
     amount,
   );
