@@ -17,6 +17,7 @@ import type {
 import { DistributionState } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
+import { getMany } from "../utils/mod.ts";
 import { FieldInterface, GroupNode, UserNode } from "./mod.ts";
 
 export const DistributionStateEnum = new GraphQLEnumType({
@@ -139,21 +140,11 @@ export const PreparingDistributionNode: Node<
           );
         }
 
-        const fieldKeySet = [...fieldIdsRes.value].map(
-          (fieldId) => ["field", fieldId],
+        const fields = await getMany<FieldModel>(
+          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
-        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
-
-        const fields = [];
-        for (const fieldRes of fieldResSet) {
-          if (fieldRes.value === null) {
-            const [_part, fieldId] = fieldRes.key;
-
-            throw new GraphQLError(`Field with ID ${fieldId} not found`);
-          }
-
-          fields.push(fieldRes.value);
-        }
 
         return fields;
       },
@@ -228,21 +219,11 @@ export const GatheringDistributionNode: Node<
           );
         }
 
-        const fieldKeySet = [...fieldIdsRes.value].map(
-          (fieldId) => ["field", fieldId],
+        const fields = await getMany<FieldModel>(
+          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
-        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
-
-        const fields = [];
-        for (const fieldRes of fieldResSet) {
-          if (fieldRes.value === null) {
-            const [_part, fieldId] = fieldRes.key;
-
-            throw new GraphQLError(`Field with ID ${fieldId} not found`);
-          }
-
-          fields.push(fieldRes.value);
-        }
 
         return fields;
       },
@@ -298,23 +279,11 @@ export const GatheringDistributionNode: Node<
           ...femaleParticipantIdsRes.value,
         ]);
 
-        const participantKeySet = [...participantIds].map(
-          (userId) => ["user", userId],
+        const participants = await getMany<UserModel>(
+          [...participantIds].map((userId) => ["user", userId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const participantResSet = await kv.getMany<UserModel[]>(
-          participantKeySet,
-        );
-
-        const participants = [];
-        for (const participantRes of participantResSet) {
-          if (participantRes.value === null) {
-            const [_part, userId] = participantRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          participants.push(participantRes.value);
-        }
 
         return participants;
       },
@@ -389,21 +358,11 @@ export const ClosedDistributionNode: Node<
           );
         }
 
-        const fieldKeySet = [...fieldIdsRes.value].map(
-          (fieldId) => ["field", fieldId],
+        const fields = await getMany<FieldModel>(
+          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
-        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
-
-        const fields = [];
-        for (const fieldRes of fieldResSet) {
-          if (fieldRes.value === null) {
-            const [_part, fieldId] = fieldRes.key;
-
-            throw new GraphQLError(`Field with ID ${fieldId} not found`);
-          }
-
-          fields.push(fieldRes.value);
-        }
 
         return fields;
       },
@@ -459,23 +418,11 @@ export const ClosedDistributionNode: Node<
           ...femaleParticipantIdsRes.value,
         ]);
 
-        const participantKeySet = [...participantIds].map(
-          (userId) => ["user", userId],
+        const participants = await getMany<UserModel>(
+          [...participantIds].map((userId) => ["user", userId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const participantResSet = await kv.getMany<UserModel[]>(
-          participantKeySet,
-        );
-
-        const participants = [];
-        for (const participantRes of participantResSet) {
-          if (participantRes.value === null) {
-            const [_part, userId] = participantRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          participants.push(participantRes.value);
-        }
 
         return participants;
       },
@@ -512,21 +459,11 @@ export const ClosedDistributionNode: Node<
           );
         }
 
-        const groupKeySet = [...groupIdsRes.value].map(
-          (groupId) => ["group", groupId],
+        const groups = await getMany<GroupModel>(
+          [...groupIdsRes.value].map((groupId) => ["group", groupId]),
+          kv,
+          ([_part, groupId]) => `Group with ID ${groupId} not found`,
         );
-        const groupResSet = await kv.getMany<GroupModel[]>(groupKeySet);
-
-        const groups = [];
-        for (const groupRes of groupResSet) {
-          if (groupRes.value === null) {
-            const [_part, groupId] = groupRes.key;
-
-            throw new GraphQLError(`Group with ID ${groupId} not found`);
-          }
-
-          groups.push(groupRes.value);
-        }
 
         return groups;
       },

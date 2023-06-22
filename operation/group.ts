@@ -8,7 +8,7 @@ import {
 import { GroupModel } from "../model/mod.ts";
 import { GroupNode } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
-import { asyncMap } from "../util/mod.ts";
+import { amap } from "../utils/mod.ts";
 
 export const GroupQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -51,7 +51,7 @@ export const GroupQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<GroupModel>({ prefix: ["group"] });
 
-        return await asyncMap(({ value }) => value, iter);
+        return await amap(({ value }) => value, iter);
       },
     },
   },

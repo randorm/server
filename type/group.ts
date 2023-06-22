@@ -8,6 +8,7 @@ import {
 import type { DistributionModel, GroupModel, UserModel } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
+import { getMany } from "../utils/mod.ts";
 import { ClosedDistributionNode, UserNode } from "./mod.ts";
 
 export const GroupNode: Node<GroupModel> = new GraphQLObjectType({
@@ -40,21 +41,11 @@ export const GroupNode: Node<GroupModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ memberIds }, _args, { kv }) {
-        const memberKeySet = [...memberIds].map(
-          (memberId) => ["user", memberId],
+        const members = await getMany<UserModel>(
+          [...memberIds].map((memberId) => ["user", memberId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const memberResSet = await kv.getMany<UserModel[]>(memberKeySet);
-
-        const members = [];
-        for (const memberRes of memberResSet) {
-          if (memberRes.value === null) {
-            const [_part, userId] = memberRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          members.push(memberRes.value);
-        }
 
         return members;
       },

@@ -20,7 +20,7 @@ import type {
 import { FieldType } from "../model/mod.ts";
 import { ChoiceFieldNode, FieldInterface, TextFieldNode } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
-import { asyncMap } from "../util/mod.ts";
+import { amap } from "../utils/mod.ts";
 
 export const FieldQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -63,7 +63,7 @@ export const FieldQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<FieldModel>({ prefix: ["field"] });
 
-        return await asyncMap(({ value }) => value, iter);
+        return await amap(({ value }) => value, iter);
       },
     },
   },

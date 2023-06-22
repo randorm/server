@@ -1,4 +1,4 @@
-import { mergeTypes } from "../util/mod.ts";
+import { mergeTypes } from "../utils/mod.ts";
 import { AnswerMutation, AnswerQuery } from "./answer.ts";
 import { DistributionMutation, DistributionQuery } from "./distribution.ts";
 import { FieldMutation, FieldQuery } from "./field.ts";

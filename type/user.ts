@@ -18,6 +18,7 @@ import type {
 } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
+import { getMany } from "../utils/mod.ts";
 import {
   AnswerInterface,
   DistributionInterface,
@@ -126,21 +127,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Viewed IDs of User with ID ${id} not found`);
         }
 
-        const viewedKeySet = [...viewedIdsRes.value].map(
-          (viewedId) => ["user", viewedId],
+        const viewed = await getMany<UserModel>(
+          [...viewedIdsRes.value].map((userId) => ["user", userId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const viewedResSet = await kv.getMany<UserModel[]>(viewedKeySet);
-
-        const viewed = [];
-        for (const viewedRes of viewedResSet) {
-          if (viewedRes.value === null) {
-            const [_part, userId] = viewedRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          viewed.push(viewedRes.value);
-        }
 
         return viewed;
       },
@@ -179,23 +170,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const subscriptionKeySet = [...subscriptionIdsRes.value].map(
-          (userId) => ["user", userId],
+        const subscriptions = await getMany<UserModel>(
+          [...subscriptionIdsRes.value].map((userId) => ["user", userId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const subscriptionResSet = await kv.getMany<UserModel[]>(
-          subscriptionKeySet,
-        );
-
-        const subscriptions = [];
-        for (const subscriptionRes of subscriptionResSet) {
-          if (subscriptionRes.value === null) {
-            const [_part, userId] = subscriptionRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          subscriptions.push(subscriptionRes.value);
-        }
 
         return subscriptions;
       },
@@ -234,23 +213,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const subscriberKeySet = [...subscriberIdsRes.value].map(
-          (userId) => ["user", userId],
+        const subscribers = await getMany<UserModel>(
+          [...subscriberIdsRes.value].map((userId) => ["user", userId]),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
         );
-        const subscriberResSet = await kv.getMany<UserModel[]>(
-          subscriberKeySet,
-        );
-
-        const subscribers = [];
-        for (const subscriberRes of subscriberResSet) {
-          if (subscriberRes.value === null) {
-            const [_part, userId] = subscriberRes.key;
-
-            throw new GraphQLError(`User with ID ${userId} not found`);
-          }
-
-          subscribers.push(subscriberRes.value);
-        }
 
         return subscribers;
       },
@@ -280,21 +247,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Field IDs of User with ID ${id} not found`);
         }
 
-        const fieldKeySet = [...fieldIdsRes.value].map(
-          (fieldId) => ["field", fieldId],
+        const fields = await getMany<FieldModel>(
+          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
-        const fieldResSet = await kv.getMany<FieldModel[]>(fieldKeySet);
-
-        const fields = [];
-        for (const fieldRes of fieldResSet) {
-          if (fieldRes.value === null) {
-            const [_part, fieldId] = fieldRes.key;
-
-            throw new GraphQLError(`Field with ID ${fieldId} not found`);
-          }
-
-          fields.push(fieldRes.value);
-        }
 
         return fields;
       },
@@ -312,23 +269,12 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Field IDs of User with ID ${id} not found`);
         }
 
-        const answerKeySet = [...fieldIdsRes.value].map(
-          (fieldId) => ["answer", fieldId, id],
+        const answers = await getMany<AnswerModel>(
+          [...fieldIdsRes.value].map((fieldId) => ["answer", fieldId, id]),
+          kv,
+          ([_part, fieldId, userId]) =>
+            `Answer to Field with ID ${fieldId} from User with ID ${userId} not found`,
         );
-        const answerResSet = await kv.getMany<AnswerModel[]>(answerKeySet);
-
-        const answers = [];
-        for (const answerRes of answerResSet) {
-          if (answerRes.value === null) {
-            const [_part, fieldId, userId] = answerRes.key;
-
-            throw new GraphQLError(
-              `Answer to Field with ID ${fieldId} from User with ID ${userId} not found`,
-            );
-          }
-
-          answers.push(answerRes.value);
-        }
 
         return answers;
       },
@@ -365,25 +311,14 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           );
         }
 
-        const distributionKeySet = [...distributionIdsRes.value].map(
-          (distributionId) => ["distribution", distributionId],
+        const distributions = await getMany<DistributionModel>(
+          [...distributionIdsRes.value].map(
+            (distributionId) => ["distribution", distributionId],
+          ),
+          kv,
+          ([_part, distributionId]) =>
+            `Distribution with ID ${distributionId} not found`,
         );
-        const distributionResSet = await kv.getMany<DistributionModel[]>(
-          distributionKeySet,
-        );
-
-        const distributions = [];
-        for (const distributionRes of distributionResSet) {
-          if (distributionRes.value === null) {
-            const [_part, distributionId] = distributionRes.key;
-
-            throw new GraphQLError(
-              `Distribution with ID ${distributionId} not found`,
-            );
-          }
-
-          distributions.push(distributionRes.value);
-        }
 
         return distributions;
       },
@@ -413,21 +348,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           throw new GraphQLError(`Group IDs of User with ID ${id} not found`);
         }
 
-        const groupKeySet = [...groupIdsRes.value].map(
-          (groupId) => ["group", groupId],
+        const groups = await getMany<GroupModel>(
+          [...groupIdsRes.value].map((groupId) => ["group", groupId]),
+          kv,
+          ([_part, groupId]) => `Group with ID ${groupId} not found`,
         );
-        const groupResSet = await kv.getMany<GroupModel[]>(groupKeySet);
-
-        const groups = [];
-        for (const groupRes of groupResSet) {
-          if (groupRes.value === null) {
-            const [_part, groupId] = groupRes.key;
-
-            throw new GraphQLError(`Group with ID ${groupId} not found`);
-          }
-
-          groups.push(groupRes.value);
-        }
 
         return groups;
       },

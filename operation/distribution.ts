@@ -15,7 +15,7 @@ import {
   PreparingDistributionNode,
 } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
-import { asyncMap } from "../util/mod.ts";
+import { amap } from "../utils/mod.ts";
 
 export const DistributionQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -63,7 +63,7 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<DistributionModel>({ prefix: ["distribution"] });
 
-        return await asyncMap(({ value }) => value, iter);
+        return await amap(({ value }) => value, iter);
       },
     },
   },

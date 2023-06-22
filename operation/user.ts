@@ -1,3 +1,4 @@
+import { recommend } from "../algorithms/mod.ts";
 import { assertUserProfile } from "../assert/mod.ts";
 import {
   GraphQLError,
@@ -16,7 +17,7 @@ import {
   SubscribeUpdate,
   UnsubscribeUpdate,
 } from "../update/mod.ts";
-import { asyncMap } from "../util/mod.ts";
+import { amap, filter } from "../utils/mod.ts";
 
 export const UserQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -63,7 +64,30 @@ export const UserQuery: Operation = new GraphQLObjectType({
       async resolve(_root, _args, { kv }) {
         const iter = kv.list<UserModel>({ prefix: ["user"] });
 
-        return await asyncMap(({ value }) => value, iter);
+        return await amap(({ value }) => value, iter);
+      },
+    },
+    recomend: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(UserNode),
+        ),
+      ),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        amount: {
+          type: new GraphQLNonNull(GraphQLInt),
+          defaultValue: 5,
+        },
+      },
+      async resolve(_root, { amount, distributionId }, { user, kv }) {
+        if (amount < 1 || amount > 10) {
+          throw new GraphQLError("Amount must be between 1 and 10");
+        }
+
+        return await recommend(user, distributionId, kv, amount);
       },
     },
   },
@@ -94,6 +118,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
       async resolve(_root, args, { user, userRes, kv }) {
         assertUserProfile(args);
 
+        // TODO: if gender is changed, delete user activity
         const update: UserModel = {
           ...user,
           profile: args,
@@ -317,7 +342,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
         if (inSubscriptions) {
           const subscriptionIds = new Set<number>(
-            [...subscriptionIdsRes.value].filter((id) => id !== userId),
+            filter((id) => id !== userId, subscriptionIdsRes.value),
           );
 
           operation
@@ -332,7 +357,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
 
         if (inSubscribers) {
           const subscriberIds = new Set<number>(
-            [...subscriberIdsRes.value].filter((id) => id !== user.id),
+            filter((id) => id !== user.id, subscriberIdsRes.value),
           );
 
           operation
