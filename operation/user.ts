@@ -135,7 +135,6 @@ export const UserMutation: Operation = new GraphQLObjectType({
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
         if (viewedIdsRes.value === null) {
           throw new GraphQLError(
             `Viewed IDs of User with ID ${user.id} not found`,
@@ -194,13 +193,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
             `Subscription IDs of User with ID ${user.id} not found`,
           );
         }
-
         if (subscriberIdsRes.value === null) {
           throw new GraphQLError(
             `Subscriber IDs of User with ID ${userId} not found`,
@@ -287,25 +284,21 @@ export const UserMutation: Operation = new GraphQLObjectType({
         if (userRes.value === null) {
           throw new GraphQLError(`User with ID ${userId} not found`);
         }
-
         if (subscriptionCountRes.value === null) {
           throw new GraphQLError(
             `Subscription count of User with ID ${user.id} not found`,
           );
         }
-
         if (subscriptionIdsRes.value === null) {
           throw new GraphQLError(
             `Subscription IDs of User with ID ${user.id} not found`,
           );
         }
-
         if (subscriberCountRes.value === null) {
           throw new GraphQLError(
             `Subscriber count of User with ID ${userId} not found`,
           );
         }
-
         if (subscriberIdsRes.value === null) {
           throw new GraphQLError(
             `Subscriber IDs of User with ID ${userId} not found`,

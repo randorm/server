@@ -300,20 +300,18 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
             `Distribution with ID ${distributionId} not found`,
           );
         }
+        if (fieldRes.value === null) {
+          throw new GraphQLError(`Field with ID ${fieldId} not found`);
+        }
+        if (fieldIdsRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
 
         if (distributionRes.value.state !== DistributionState.PREPARING) {
           throw new GraphQLError(
             `Distribution with ID ${distributionId} is not in PREPARING state`,
-          );
-        }
-
-        if (fieldRes.value === null) {
-          throw new GraphQLError(`Field with ID ${fieldId} not found`);
-        }
-
-        if (fieldIdsRes.value === null) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} not found`,
           );
         }
 
@@ -372,22 +370,20 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
             `Distribution with ID ${distributionId} not found`,
           );
         }
-
-        if (distributionRes.value.state !== DistributionState.PREPARING) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} is not in PREPARING state`,
-          );
-        }
-
         if (fieldCountRes.value === null) {
           throw new GraphQLError(
             `Field count of Distribution with ID ${distributionId} not found`,
           );
         }
-
         if (fieldIdsRes.value === null) {
           throw new GraphQLError(
             `Field IDs of Distribution with ID ${distributionId} not found`,
+          );
+        }
+
+        if (distributionRes.value.state !== DistributionState.PREPARING) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} is not in PREPARING state`,
           );
         }
 
