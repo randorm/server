@@ -410,19 +410,35 @@ export const ClosedDistributionNode: Node<
         ),
       ),
       async resolve({ id }, _args, { kv }) {
-        const participantIdsRes = await kv.get<Set<number>>([
-          "distribution:participant_ids",
-          id,
+        const [
+          maleParticipantIdsRes,
+          femaleParticipantIdsRes,
+        ] = await kv.getMany<[
+          Set<number>,
+          Set<number>,
+        ]>([
+          ["distribution:male_participant_ids", id],
+          ["distribution:male_participant_ids", id],
         ]);
 
-        if (participantIdsRes.value === null) {
+        if (maleParticipantIdsRes.value === null) {
           throw new GraphQLError(
-            `Participants of Distribution with ID ${id} not found`,
+            `Male participant IDs of Distribution with ID ${id} not found`,
+          );
+        }
+        if (femaleParticipantIdsRes.value === null) {
+          throw new GraphQLError(
+            `Female participant IDs of Distribution with ID ${id} not found`,
           );
         }
 
+        const participantIds = new Set<number>([
+          ...maleParticipantIdsRes.value,
+          ...femaleParticipantIdsRes.value,
+        ]);
+
         const participants = [];
-        for (const participantId of participantIdsRes.value) {
+        for (const participantId of participantIds) {
           const userRes = await kv.get<UserModel>(["user", participantId]);
 
           if (userRes.value === null) {
