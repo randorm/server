@@ -118,7 +118,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
       async resolve(_root, args, { user, userRes, kv }) {
         assertUserProfile(args);
 
-        // TODO: if gender is changed, delete user activity
+        // TODO(machnevegor): if gender is changed, delete user activity
         const update: UserModel = {
           ...user,
           profile: args,
@@ -232,7 +232,6 @@ export const UserMutation: Operation = new GraphQLObjectType({
         const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
-        // TODO(machnevegor): maybe return a different type of update
         if (inSubscriptions && inSubscribers) {
           return { user: userRes.value, subscriber: user };
         }
@@ -333,7 +332,6 @@ export const UserMutation: Operation = new GraphQLObjectType({
         const inSubscriptions = subscriptionIdsRes.value.has(userId);
         const inSubscribers = subscriberIdsRes.value.has(user.id);
 
-        // TODO(machnevegor): maybe return a different type of update
         if (!inSubscriptions && !inSubscribers) {
           return { user: userRes.value, unsubscriber: user };
         }
