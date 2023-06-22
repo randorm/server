@@ -20,6 +20,10 @@ export function idifference<T>(
   return ifilter((value) => !subtrahend.has(value), minuend);
 }
 
+export function difference<T>(minuend: Set<T>, subtrahend: Set<T>): Set<T> {
+  return new Set(idifference(minuend, subtrahend));
+}
+
 export function* ilimit<T>(iterable: Iterable<T>, bound: number): Iterable<T> {
   if (bound <= 0) {
     throw new Error("Limit must be positive");
