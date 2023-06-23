@@ -3,6 +3,7 @@ import type { DistributionModel, UserModel } from "../model/mod.ts";
 import { DistributionState, Gender } from "../model/mod.ts";
 import {
   difference,
+  divideWhile,
   getMany,
   idifference,
   limit,
@@ -99,17 +100,15 @@ export async function recommend(
     return subscribers;
   }
 
-  const participantIds = limit(
-    idifference(
-      difference(participantIdsRes.value, subscriptionIdsRes.value),
-      viewedIds,
-    ),
-    amount,
+  const [viewedParticipantIds, unviewedParticipantIds] = divideWhile(
+    difference(participantIdsRes.value, subscriptionIdsRes.value),
+    viewedIds,
+    (_viewed, unviewed) => unviewed.size !== amount,
   );
 
-  if (participantIds.length) {
+  if (unviewedParticipantIds.size) {
     const participants = await getMany<UserModel>(
-      map((userId) => ["user", userId], participantIds),
+      map((userId) => ["user", userId], unviewedParticipantIds),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );
@@ -117,9 +116,11 @@ export async function recommend(
     return participants;
   }
 
-  if (viewedIds.size) {
+  if (viewedParticipantIds.size) {
+    const sampledIds = sample(viewedParticipantIds, amount);
+
     const viewed = await getMany<UserModel>(
-      map((userId) => ["user", userId], sample(viewedIds, amount)),
+      map((userId) => ["user", userId], sampledIds),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );
