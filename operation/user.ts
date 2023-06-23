@@ -118,7 +118,26 @@ export const UserMutation: Operation = new GraphQLObjectType({
       async resolve(_root, args, { user, userRes, kv }) {
         assertUserProfile(args);
 
-        // TODO(machnevegor): if gender is changed, delete user activity
+        const distributionCountRes = await kv.get<Deno.KvU64>([
+          "user:distribution_count",
+          user.id,
+        ]);
+
+        if (distributionCountRes.value === null) {
+          throw new GraphQLError(
+            `Distribution count of User with ID ${user.id} not found`,
+          );
+        }
+
+        if (
+          distributionCountRes.value.value &&
+          args.gender !== user.profile.gender
+        ) {
+          throw new GraphQLError(
+            "User cannot change gender after joining the first distribution",
+          );
+        }
+
         const update: UserModel = {
           ...user,
           profile: args,
