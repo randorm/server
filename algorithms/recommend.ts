@@ -118,10 +118,8 @@ export async function recommend(
   }
 
   if (viewedIds.size) {
-    const slice = sample([...viewedIds], amount);
-
     const viewed = await getMany<UserModel>(
-      map((userId) => ["user", userId], slice),
+      map((userId) => ["user", userId], sample(viewedIds, amount)),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );

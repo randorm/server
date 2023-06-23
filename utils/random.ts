@@ -2,7 +2,7 @@ export function randomInt(lower: number, upper: number): number {
   return lower + Math.floor(Math.random() * (upper - lower + 1));
 }
 
-export function shuffle<T>(values: T[]): T[] {
+export function shuffle<T>(values: Iterable<T>): T[] {
   const shuffled = [...values];
 
   for (let i = 0; i < shuffled.length; i++) {
@@ -14,7 +14,7 @@ export function shuffle<T>(values: T[]): T[] {
   return shuffled;
 }
 
-export function sample<T>(population: T[], k: number): T[] {
+export function sample<T>(population: Iterable<T>, k: number): T[] {
   if (k <= 0) {
     throw new Error("Sample size must be positive");
   }
