@@ -1,14 +1,14 @@
 import { chunk, GraphQLError } from "../deps.ts";
 import { map } from "./mod.ts";
 
-export const BATCH_LIMIT = 10;
+export const BATCH_SIZE = 10;
 
 export async function getMany<T>(
   keys: Deno.KvKey[],
   kv: Deno.Kv,
   verdictor: (key: Deno.KvKey) => string,
 ): Promise<T[]> {
-  const portions = chunk(keys, BATCH_LIMIT);
+  const portions = chunk(keys, BATCH_SIZE);
 
   const entries = [];
   for (const portion of portions) {
