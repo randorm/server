@@ -1,7 +1,21 @@
-export type Predicate<T> = (value: T) => boolean;
+export function* imap<T, U = T>(
+  transformer: (value: T) => U,
+  iterable: Iterable<T>,
+): Iterable<U> {
+  for (const value of iterable) {
+    yield transformer(value);
+  }
+}
+
+export function map<T, U = T>(
+  transformer: (value: T) => U,
+  iterable: Iterable<T>,
+): U[] {
+  return [...imap(transformer, iterable)];
+}
 
 export function* ifilter<T>(
-  predicate: Predicate<T>,
+  predicate: (value: T) => boolean,
   iterable: Iterable<T>,
 ): Iterable<T> {
   for (const value of iterable) {
@@ -9,7 +23,10 @@ export function* ifilter<T>(
   }
 }
 
-export function filter<T>(predicate: Predicate<T>, iterable: Iterable<T>): T[] {
+export function filter<T>(
+  predicate: (value: T) => boolean,
+  iterable: Iterable<T>,
+): T[] {
   return [...ifilter(predicate, iterable)];
 }
 

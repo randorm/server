@@ -18,7 +18,7 @@ import type {
 } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
-import { getMany } from "../utils/mod.ts";
+import { getMany, map } from "../utils/mod.ts";
 import {
   AnswerInterface,
   DistributionInterface,
@@ -128,7 +128,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const viewed = await getMany<UserModel>(
-          [...viewedIdsRes.value].map((userId) => ["user", userId]),
+          map((userId) => ["user", userId], viewedIdsRes.value),
           kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
@@ -171,7 +171,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const subscriptions = await getMany<UserModel>(
-          [...subscriptionIdsRes.value].map((userId) => ["user", userId]),
+          map((userId) => ["user", userId], subscriptionIdsRes.value),
           kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
@@ -214,7 +214,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const subscribers = await getMany<UserModel>(
-          [...subscriberIdsRes.value].map((userId) => ["user", userId]),
+          map((userId) => ["user", userId], subscriberIdsRes.value),
           kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
@@ -248,7 +248,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const fields = await getMany<FieldModel>(
-          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          map((fieldId) => ["field", fieldId], fieldIdsRes.value),
           kv,
           ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
@@ -270,7 +270,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const answers = await getMany<AnswerModel>(
-          [...fieldIdsRes.value].map((fieldId) => ["answer", fieldId, id]),
+          map((fieldId) => ["answer", fieldId, id], fieldIdsRes.value),
           kv,
           ([_part, fieldId, userId]) =>
             `Answer to Field with ID ${fieldId} from User with ID ${userId} not found`,
@@ -312,8 +312,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const distributions = await getMany<DistributionModel>(
-          [...distributionIdsRes.value].map(
+          map(
             (distributionId) => ["distribution", distributionId],
+            distributionIdsRes.value,
           ),
           kv,
           ([_part, distributionId]) =>
@@ -349,7 +350,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         }
 
         const groups = await getMany<GroupModel>(
-          [...groupIdsRes.value].map((groupId) => ["group", groupId]),
+          map((groupId) => ["group", groupId], groupIdsRes.value),
           kv,
           ([_part, groupId]) => `Group with ID ${groupId} not found`,
         );

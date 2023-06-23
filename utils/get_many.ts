@@ -1,22 +1,21 @@
 import { GraphQLError } from "../deps.ts";
-
-export type Verdictor = (key: Deno.KvKey) => string;
+import { map } from "./mod.ts";
 
 export async function getMany<T>(
   keys: Deno.KvKey[],
   kv: Deno.Kv,
-  verdictor: Verdictor,
+  verdictor: (key: Deno.KvKey) => string,
 ): Promise<T[]> {
-  const entryResSet = await kv.getMany<T[]>(keys);
+  const entries = await kv.getMany<T[]>(keys);
 
-  const entries = [];
-  for (const entryRes of entryResSet) {
-    if (entryRes.value === null) {
-      throw new GraphQLError(verdictor(entryRes.key));
-    }
+  return map(
+    (entry) => {
+      if (entry.value === null) {
+        throw new GraphQLError(verdictor(entry.key));
+      }
 
-    entries.push(entryRes.value);
-  }
-
-  return entries;
+      return entry.value;
+    },
+    entries,
+  );
 }

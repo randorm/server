@@ -17,7 +17,7 @@ import type {
 import { DistributionState } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import type { Node } from "../types.ts";
-import { getMany } from "../utils/mod.ts";
+import { getMany, map } from "../utils/mod.ts";
 import { FieldInterface, GroupNode, UserNode } from "./mod.ts";
 
 export const DistributionStateEnum = new GraphQLEnumType({
@@ -141,7 +141,7 @@ export const PreparingDistributionNode: Node<
         }
 
         const fields = await getMany<FieldModel>(
-          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          map((fieldId) => ["field", fieldId], fieldIdsRes.value),
           kv,
           ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
@@ -220,7 +220,7 @@ export const GatheringDistributionNode: Node<
         }
 
         const fields = await getMany<FieldModel>(
-          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          map((fieldId) => ["field", fieldId], fieldIdsRes.value),
           kv,
           ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
@@ -280,7 +280,7 @@ export const GatheringDistributionNode: Node<
         ]);
 
         const participants = await getMany<UserModel>(
-          [...participantIds].map((userId) => ["user", userId]),
+          map((userId) => ["user", userId], participantIds),
           kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
@@ -359,7 +359,7 @@ export const ClosedDistributionNode: Node<
         }
 
         const fields = await getMany<FieldModel>(
-          [...fieldIdsRes.value].map((fieldId) => ["field", fieldId]),
+          map((fieldId) => ["field", fieldId], fieldIdsRes.value),
           kv,
           ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
         );
@@ -419,7 +419,7 @@ export const ClosedDistributionNode: Node<
         ]);
 
         const participants = await getMany<UserModel>(
-          [...participantIds].map((userId) => ["user", userId]),
+          map((userId) => ["user", userId], participantIds),
           kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
@@ -460,7 +460,7 @@ export const ClosedDistributionNode: Node<
         }
 
         const groups = await getMany<GroupModel>(
-          [...groupIdsRes.value].map((groupId) => ["group", groupId]),
+          map((groupId) => ["group", groupId], groupIdsRes.value),
           kv,
           ([_part, groupId]) => `Group with ID ${groupId} not found`,
         );

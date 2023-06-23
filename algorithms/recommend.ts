@@ -1,7 +1,14 @@
 import { GraphQLError } from "../deps.ts";
 import type { DistributionModel, UserModel } from "../model/mod.ts";
 import { DistributionState, Gender } from "../model/mod.ts";
-import { difference, getMany, idifference, limit } from "../utils/mod.ts";
+import {
+  difference,
+  getMany,
+  idifference,
+  limit,
+  map,
+  sample,
+} from "../utils/mod.ts";
 
 export async function recommend(
   user: UserModel,
@@ -72,17 +79,19 @@ export async function recommend(
     );
   }
 
+  const viewedIds = difference(viewedIdsRes.value, subscriptionIdsRes.value);
+
   const subscriberIds = limit(
     idifference(
       difference(subscriberIdsRes.value, subscriptionIdsRes.value),
-      viewedIdsRes.value,
+      viewedIds,
     ),
     amount,
   );
 
   if (subscriberIds.length) {
     const subscribers = await getMany<UserModel>(
-      subscriberIds.map((userId) => ["user", userId]),
+      map((userId) => ["user", userId], subscriberIds),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );
@@ -93,14 +102,14 @@ export async function recommend(
   const participantIds = limit(
     idifference(
       difference(participantIdsRes.value, subscriptionIdsRes.value),
-      viewedIdsRes.value,
+      viewedIds,
     ),
     amount,
   );
 
   if (participantIds.length) {
     const participants = await getMany<UserModel>(
-      participantIds.map((userId) => ["user", userId]),
+      map((userId) => ["user", userId], participantIds),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );
@@ -108,15 +117,11 @@ export async function recommend(
     return participants;
   }
 
-  const viewedIds = limit(
-    // TODO(machnevegor): shuffle viewedIdsRes.value
-    idifference(viewedIdsRes.value, subscriptionIdsRes.value),
-    amount,
-  );
+  if (viewedIds.size) {
+    const slice = sample([...viewedIds], amount);
 
-  if (viewedIds.length) {
     const viewed = await getMany<UserModel>(
-      viewedIds.map((userId) => ["user", userId]),
+      map((userId) => ["user", userId], slice),
       kv,
       ([_part, userId]) => `User with ID ${userId} not found`,
     );
