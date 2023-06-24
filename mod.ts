@@ -7,6 +7,7 @@ import type { UserModel } from "./model/mod.ts";
 import { Gender, Role } from "./model/mod.ts";
 import { Mutation, Query } from "./operation/mod.ts";
 import {
+  AnsweringDistributionNode,
   ChoiceAnswerNode,
   ChoiceFieldNode,
   ClosedDistributionNode,
@@ -25,6 +26,7 @@ export const schema = new GraphQLSchema({
   query: Query,
   mutation: Mutation,
   types: [
+    AnsweringDistributionNode,
     ChoiceAnswerNode,
     ChoiceFieldNode,
     ClosedDistributionNode,

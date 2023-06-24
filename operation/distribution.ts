@@ -144,7 +144,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
 
         switch (distributionRes.value.state) {
           case DistributionState.PREPARING: {
-            if (state !== DistributionState.GATHERING) {
+            if (state !== DistributionState.ANSWERING) {
               throw new GraphQLError("State order is violated");
             }
 
@@ -171,6 +171,34 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
                 ["distribution:female_participant_ids", distributionId],
                 new Set<number>(),
               )
+              .commit();
+
+            if (!commitRes.ok) {
+              throw new GraphQLError(
+                `Failed to update Distribution with ID ${distributionId}`,
+              );
+            }
+
+            return update;
+          }
+          case DistributionState.ANSWERING: {
+            if (state !== DistributionState.GATHERING) {
+              throw new GraphQLError("State order is violated");
+            }
+
+            const update: DistributionModel = {
+              ...distributionRes.value,
+              state,
+              updatedAt: new Date(),
+            };
+
+            assertDistribution(update);
+
+            // TODO(machnevegor): notify users about the start of the feed
+
+            const commitRes = await kv.atomic()
+              .check(distributionRes)
+              .set(["distribution", distributionId], update)
               .commit();
 
             if (!commitRes.ok) {

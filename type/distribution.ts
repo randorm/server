@@ -26,6 +26,9 @@ export const DistributionStateEnum = new GraphQLEnumType({
     PREPARING: {
       value: "preparing",
     },
+    ANSWERING: {
+      value: "answering",
+    },
     GATHERING: {
       value: "gathering",
     },
@@ -158,6 +161,145 @@ export const PreparingDistributionNode: Node<
   }),
 });
 
+export const AnsweringDistributionNode: Node<
+  DistributionModel
+> = new GraphQLObjectType({
+  name: "AnsweringDistribution",
+  interfaces: [
+    DistributionInterface,
+  ],
+  fields: () => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    state: {
+      type: new GraphQLNonNull(DistributionStateEnum),
+    },
+    creator: {
+      type: new GraphQLNonNull(UserNode),
+      async resolve({ creatorId }, _args, { kv }) {
+        const res = await kv.get<UserModel>(["user", creatorId]);
+
+        if (res.value === null) {
+          throw new GraphQLError(`User with ID ${creatorId} not found`);
+        }
+
+        return res.value;
+      },
+    },
+    name: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    fieldCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>(["distribution:field_count", id]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Field count of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
+    },
+    fields: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(FieldInterface),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const fieldIdsRes = await kv.get<Set<number>>([
+          "distribution:field_ids",
+          id,
+        ]);
+
+        if (fieldIdsRes.value === null) {
+          throw new GraphQLError(
+            `Field IDs of Distribution with ID ${id} not found`,
+          );
+        }
+
+        const fields = await getMany<FieldModel>(
+          map((fieldId) => ["field", fieldId], fieldIdsRes.value),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
+        );
+
+        return fields;
+      },
+    },
+    participantCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      async resolve({ id }, _args, { kv }) {
+        const res = await kv.get<Deno.KvU64>([
+          "distribution:participant_count",
+          id,
+        ]);
+
+        if (res.value === null) {
+          throw new GraphQLError(
+            `Participant count of Distribution with ID ${id} not found`,
+          );
+        }
+
+        return Number(res.value);
+      },
+    },
+    participants: {
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(UserNode),
+        ),
+      ),
+      async resolve({ id }, _args, { kv }) {
+        const [
+          maleParticipantIdsRes,
+          femaleParticipantIdsRes,
+        ] = await kv.getMany<[
+          Set<number>,
+          Set<number>,
+        ]>([
+          ["distribution:male_participant_ids", id],
+          ["distribution:female_participant_ids", id],
+        ]);
+
+        if (maleParticipantIdsRes.value === null) {
+          throw new GraphQLError(
+            `Male participant IDs of Distribution with ID ${id} not found`,
+          );
+        }
+        if (femaleParticipantIdsRes.value === null) {
+          throw new GraphQLError(
+            `Female participant IDs of Distribution with ID ${id} not found`,
+          );
+        }
+
+        const participantIds = new Set<number>([
+          ...maleParticipantIdsRes.value,
+          ...femaleParticipantIdsRes.value,
+        ]);
+
+        const participants = await getMany<UserModel>(
+          map((userId) => ["user", userId], participantIds),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
+        );
+
+        return participants;
+      },
+    },
+    createdAt: {
+      type: new GraphQLNonNull(DateScalar),
+    },
+    updatedAt: {
+      type: new GraphQLNonNull(DateScalar),
+    },
+  }),
+});
+
 export const GatheringDistributionNode: Node<
   DistributionModel
 > = new GraphQLObjectType({
@@ -260,7 +402,7 @@ export const GatheringDistributionNode: Node<
           Set<number>,
         ]>([
           ["distribution:male_participant_ids", id],
-          ["distribution:male_participant_ids", id],
+          ["distribution:female_participant_ids", id],
         ]);
 
         if (maleParticipantIdsRes.value === null) {
@@ -399,7 +541,7 @@ export const ClosedDistributionNode: Node<
           Set<number>,
         ]>([
           ["distribution:male_participant_ids", id],
-          ["distribution:male_participant_ids", id],
+          ["distribution:female_participant_ids", id],
         ]);
 
         if (maleParticipantIdsRes.value === null) {

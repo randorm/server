@@ -1,5 +1,6 @@
 export enum DistributionState {
   PREPARING = "preparing",
+  ANSWERING = "answering",
   GATHERING = "gathering",
   CLOSED = "closed",
 }
