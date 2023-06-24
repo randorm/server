@@ -42,8 +42,8 @@ export function difference<T>(minuend: Set<T>, subtrahend: Set<T>): Set<T> {
 }
 
 export function* ilimit<T>(iterable: Iterable<T>, bound: number): Iterable<T> {
-  if (bound <= 0) {
-    throw new Error("Limit must be positive");
+  if (!Number.isInteger(bound) || bound <= 0) {
+    throw new Error("Bound must be a positive integer");
   }
 
   let count = 0;

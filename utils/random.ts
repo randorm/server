@@ -15,8 +15,8 @@ export function shuffle<T>(values: Iterable<T>): T[] {
 }
 
 export function sample<T>(population: Iterable<T>, k: number): T[] {
-  if (k <= 0) {
-    throw new Error("Sample size must be positive");
+  if (!Number.isInteger(k) || k <= 0) {
+    throw new Error("Sample size must be a positive integer");
   }
 
   return shuffle(population).slice(0, k);
