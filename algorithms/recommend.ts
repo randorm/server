@@ -100,8 +100,10 @@ export async function recommend(
     return subscribers;
   }
 
+  const excludedIds = new Set<number>([...subscriptionIdsRes.value, user.id]);
+
   const [viewedParticipantIds, unviewedParticipantIds] = divideWhile(
-    difference(participantIdsRes.value, subscriptionIdsRes.value),
+    difference(participantIdsRes.value, excludedIds),
     viewedIds,
     (_viewed, unviewed) => unviewed.size !== amount,
   );

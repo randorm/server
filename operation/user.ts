@@ -67,7 +67,7 @@ export const UserQuery: Operation = new GraphQLObjectType({
         return await amap(({ value }) => value, iter);
       },
     },
-    recomend: {
+    recommend: {
       type: new GraphQLNonNull(
         new GraphQLList(
           new GraphQLNonNull(UserNode),
