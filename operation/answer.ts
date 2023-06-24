@@ -151,7 +151,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             .sum(["field:answer_count", fieldId], 1n);
 
           if (!fieldIdsRes.value.has(fieldId)) {
-            const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+            const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
 
             operation
               .check(fieldIdsRes)
@@ -255,7 +255,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             .sum(["field:answer_count", fieldId], 1n);
 
           if (!fieldIdsRes.value.has(fieldId)) {
-            const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+            const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
 
             operation
               .check(fieldIdsRes)

@@ -11,5 +11,6 @@ export {
   GraphQLScalarType,
   GraphQLSchema,
   GraphQLString,
+  GraphQLUnionType,
   Kind,
 } from "https://esm.sh/graphql@16.5.0";

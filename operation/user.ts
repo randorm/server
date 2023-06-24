@@ -347,16 +347,16 @@ export const UserMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const inSubscriptions = subscriptionIdsRes.value.has(userId);
-        const inSubscribers = subscriberIdsRes.value.has(user.id);
+        const inSubscriptionIds = subscriptionIdsRes.value.has(userId);
+        const inSubscriberIds = subscriberIdsRes.value.has(user.id);
 
-        if (!inSubscriptions && !inSubscribers) {
+        if (!inSubscriptionIds && !inSubscriberIds) {
           return { user: userRes.value, unsubscriber: user };
         }
 
         const operation = kv.atomic();
 
-        if (inSubscriptions) {
+        if (inSubscriptionIds) {
           const subscriptionIds = new Set<number>(
             filter((id) => id !== userId, subscriptionIdsRes.value),
           );
@@ -371,7 +371,7 @@ export const UserMutation: Operation = new GraphQLObjectType({
             .set(["user:subscription_ids", user.id], subscriptionIds);
         }
 
-        if (inSubscribers) {
+        if (inSubscriberIds) {
           const subscriberIds = new Set<number>(
             filter((id) => id !== user.id, subscriberIdsRes.value),
           );

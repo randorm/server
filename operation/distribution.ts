@@ -8,14 +8,18 @@ import {
   GraphQLString,
 } from "../deps.ts";
 import type { DistributionModel, FieldModel } from "../model/mod.ts";
-import { DistributionState } from "../model/mod.ts";
+import { DistributionState, Gender } from "../model/mod.ts";
 import {
   DistributionInterface,
   DistributionStateEnum,
   PreparingDistributionNode,
 } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
-import { amap } from "../utils/mod.ts";
+import {
+  JoinDistributionUpdate,
+  LeaveDistributionUpdate,
+} from "../update/mod.ts";
+import { amap, filter } from "../utils/mod.ts";
 
 export const DistributionQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -349,7 +353,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+        const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
 
         const commitRes = await kv.atomic()
           .check(fieldIdsRes)
@@ -421,7 +425,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        const fieldIds = new Set([...fieldIdsRes.value, fieldId]);
+        const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
 
         const commitRes = await kv.atomic()
           .check(fieldCountRes)
@@ -483,6 +487,224 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         }
 
         return distributionId;
+      },
+    },
+    joinDistribution: {
+      type: new GraphQLNonNull(JoinDistributionUpdate),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { distributionId }, { user, kv }) {
+        const participantIdsKey = [
+          user.profile.gender === Gender.MALE
+            ? "distribution:male_participant_ids"
+            : "distribution:female_participant_ids",
+          distributionId,
+        ];
+
+        const [
+          distributionRes,
+          participantIdsRes,
+          distributionIdsRes,
+        ] = await kv.getMany<[
+          DistributionModel,
+          Set<number>,
+          Set<number>,
+        ]>([
+          ["distribution", distributionId],
+          participantIdsKey,
+          ["user:distribution_ids", user.id],
+        ]);
+
+        if (distributionRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (participantIdsRes.value === null) {
+          throw new GraphQLError(
+            `Participant IDs of Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (distributionIdsRes.value === null) {
+          throw new GraphQLError(
+            `Distribution IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        if (
+          distributionRes.value.state !== DistributionState.ANSWERING &&
+          distributionRes.value.state !== DistributionState.GATHERING
+        ) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} is not in ANSWERING or GATHERING state`,
+          );
+        }
+
+        const inParticipantIds = participantIdsRes.value.has(user.id);
+        const inDistributionIds = distributionIdsRes.value.has(distributionId);
+
+        if (inParticipantIds && inDistributionIds) {
+          return { distribution: distributionRes.value, user };
+        }
+
+        const operation = kv.atomic();
+
+        if (!inParticipantIds) {
+          const participantIds = new Set<number>([
+            ...participantIdsRes.value,
+            user.id,
+          ]);
+
+          operation
+            .check(participantIdsRes)
+            .set(participantIdsKey, participantIds)
+            .sum(["distribution:participant_count", distributionId], 1n);
+        }
+
+        if (!inDistributionIds) {
+          const distributionIds = new Set<number>([
+            ...distributionIdsRes.value,
+            distributionId,
+          ]);
+
+          operation
+            .check(distributionIdsRes)
+            .set(["user:distribution_ids", user.id], distributionIds)
+            .sum(["user:distribution_count", user.id], 1n);
+        }
+
+        const commitRes = await operation.commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(
+            `Failed to join to Distribution with ID ${distributionId}`,
+          );
+        }
+
+        return { distribution: distributionRes.value, user };
+      },
+    },
+    leaveDistribution: {
+      type: new GraphQLNonNull(LeaveDistributionUpdate),
+      args: {
+        distributionId: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+      },
+      async resolve(_root, { distributionId }, { user, kv }) {
+        const participantIdsKey = [
+          user.profile.gender === Gender.MALE
+            ? "distribution:male_participant_ids"
+            : "distribution:female_participant_ids",
+          distributionId,
+        ];
+
+        const [
+          distributionRes,
+          participantCountRes,
+          participantIdsRes,
+          distributionCountRes,
+          distributionIdsRes,
+        ] = await kv.getMany<[
+          DistributionModel,
+          Deno.KvU64,
+          Set<number>,
+          Deno.KvU64,
+          Set<number>,
+        ]>([
+          ["distribution", distributionId],
+          ["distribution:participant_count", distributionId],
+          participantIdsKey,
+          ["user:distribution_count", user.id],
+          ["user:distribution_ids", user.id],
+        ]);
+
+        if (distributionRes.value === null) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (participantCountRes.value === null) {
+          throw new GraphQLError(
+            `Participant count of Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (participantIdsRes.value === null) {
+          throw new GraphQLError(
+            `Participant IDs of Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (distributionCountRes.value === null) {
+          throw new GraphQLError(
+            `Distribution count of User with ID ${user.id} not found`,
+          );
+        }
+        if (distributionIdsRes.value === null) {
+          throw new GraphQLError(
+            `Distribution IDs of User with ID ${user.id} not found`,
+          );
+        }
+
+        if (
+          distributionRes.value.state !== DistributionState.ANSWERING &&
+          distributionRes.value.state !== DistributionState.GATHERING
+        ) {
+          throw new GraphQLError(
+            `Distribution with ID ${distributionId} is not in ANSWERING or GATHERING state`,
+          );
+        }
+
+        const inParticipantIds = participantIdsRes.value.has(user.id);
+        const inDistributionIds = distributionIdsRes.value.has(distributionId);
+
+        if (!inParticipantIds && !inDistributionIds) {
+          return { distribution: distributionRes.value, user };
+        }
+
+        const operation = kv.atomic();
+
+        if (inParticipantIds) {
+          const participantIds = new Set<number>(
+            filter((id) => id !== user.id, participantIdsRes.value),
+          );
+
+          operation
+            .check(participantCountRes)
+            .check(participantIdsRes)
+            .set(
+              ["distribution:participant_count", distributionId],
+              new Deno.KvU64(BigInt(participantIds.size)),
+            )
+            .set(participantIdsKey, participantIds);
+        }
+
+        if (inDistributionIds) {
+          const distributionIds = new Set<number>(
+            filter((id) => id !== distributionId, distributionIdsRes.value),
+          );
+
+          operation
+            .check(distributionCountRes)
+            .check(distributionIdsRes)
+            .set(
+              ["user:distribution_count", user.id],
+              new Deno.KvU64(BigInt(distributionIds.size)),
+            )
+            .set(["user:distribution_ids", user.id], distributionIds);
+        }
+
+        const commitRes = await operation.commit();
+
+        if (!commitRes.ok) {
+          throw new GraphQLError(
+            `Failed to leave from Distribution with ID ${distributionId}`,
+          );
+        }
+
+        return { distribution: distributionRes.value, user };
       },
     },
   },
