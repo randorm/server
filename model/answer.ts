@@ -15,7 +15,7 @@ export interface TextAnswerModel extends BaseAnswerModel {
 
 export interface ChoiceAnswerModel extends BaseAnswerModel {
   readonly type: FieldType.CHOICE;
-  value: Set<number>;
+  indices: Set<number>;
 }
 
 export type AnswerModel = TextAnswerModel | ChoiceAnswerModel;

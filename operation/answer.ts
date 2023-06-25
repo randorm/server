@@ -196,7 +196,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
         fieldId: {
           type: new GraphQLNonNull(GraphQLInt),
         },
-        value: {
+        indices: {
           type: new GraphQLNonNull(
             new GraphQLList(
               new GraphQLNonNull(GraphQLInt),
@@ -204,7 +204,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
           ),
         },
       },
-      async resolve(_root, { fieldId, value }, { kv, user }) {
+      async resolve(_root, { fieldId, indices }, { kv, user }) {
         const [
           fieldRes,
           answerRes,
@@ -242,7 +242,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             fieldId,
             respondentId: user.id,
             type: FieldType.CHOICE,
-            value,
+            indices,
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -274,7 +274,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         const answerUpdate: ChoiceAnswerModel = {
           ...answerRes.value,
-          value,
+          indices,
           updatedAt: new Date(),
         };
 

@@ -5,19 +5,19 @@ export function assertChoiceAnswer(
   answer: ChoiceAnswerModel,
   field: ChoiceFieldModel,
 ) {
-  if (!answer.value.size) {
+  if (!answer.indices.size) {
     throw new GraphQLError(
       `Answer to ChoiceField with ID ${field.id} is empty`,
     );
   }
 
-  if (!field.multiple && answer.value.size > 1) {
+  if (!field.multiple && answer.indices.size > 1) {
     throw new GraphQLError(
       `Answer to ChoiceField with ID ${field.id} is multiple`,
     );
   }
 
-  for (const optionIndex of answer.value) {
+  for (const optionIndex of answer.indices) {
     if (0 > optionIndex || optionIndex >= field.options.length) {
       throw new GraphQLError(
         `Answer to ChoiceField with ID ${field.id} contains invalid option index ${optionIndex}`,

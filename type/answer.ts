@@ -141,7 +141,7 @@ export const ChoiceAnswerNode: Node<ChoiceAnswerModel> = new GraphQLObjectType({
         return res.value;
       },
     },
-    value: {
+    indices: {
       type: new GraphQLNonNull(
         new GraphQLList(
           new GraphQLNonNull(GraphQLInt),
