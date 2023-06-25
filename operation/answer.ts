@@ -242,7 +242,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
             fieldId,
             respondentId: user.id,
             type: FieldType.CHOICE,
-            indices,
+            indices: new Set(indices),
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -274,7 +274,7 @@ export const AnswerMutation: Operation = new GraphQLObjectType({
 
         const answerUpdate: ChoiceAnswerModel = {
           ...answerRes.value,
-          indices,
+          indices: new Set(indices),
           updatedAt: new Date(),
         };
 
