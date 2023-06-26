@@ -82,12 +82,12 @@ export const UserQuery: Operation = new GraphQLObjectType({
           defaultValue: 5,
         },
       },
-      async resolve(_root, { amount, distributionId }, { user, kv }) {
+      async resolve(_root, { amount, distributionId }, context) {
         if (amount < 1 || amount > 10) {
           throw new GraphQLError("Amount must be between 1 and 10");
         }
 
-        return await recommend(user, distributionId, kv, amount);
+        return await recommend(distributionId, amount, context);
       },
     },
   },

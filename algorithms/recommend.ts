@@ -1,6 +1,7 @@
 import { GraphQLError } from "../deps.ts";
 import type { DistributionModel, UserModel } from "../model/mod.ts";
 import { DistributionState, Gender } from "../model/mod.ts";
+import type { NodeContext } from "../types.ts";
 import {
   difference,
   divideWhile,
@@ -12,10 +13,9 @@ import {
 } from "../utils/mod.ts";
 
 export async function recommend(
-  user: UserModel,
   distributionId: number,
-  kv: Deno.Kv,
   amount: number,
+  { user, kv }: NodeContext,
 ): Promise<UserModel[]> {
   const [
     distributionRes,
