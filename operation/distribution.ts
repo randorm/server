@@ -1,3 +1,4 @@
+import { distribute } from "../algorithms/mod.ts";
 import { assertDistribution, assertEditor } from "../assert/mod.ts";
 import {
   GraphQLError,
@@ -218,35 +219,7 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
               throw new GraphQLError("State order is violated");
             }
 
-            const update: DistributionModel = {
-              ...distributionRes.value,
-              state,
-              updatedAt: new Date(),
-            };
-
-            assertDistribution(update);
-
-            const commitRes = await kv.atomic()
-              .check(distributionRes)
-              .set(["distribution", distributionId], update)
-              // TODO: distribute students and notify them
-              .set(
-                ["distribution:group_count", distributionId],
-                new Deno.KvU64(0n),
-              )
-              .set(
-                ["distribution:group_ids", distributionId],
-                new Set<number>(),
-              )
-              .commit();
-
-            if (!commitRes.ok) {
-              throw new GraphQLError(
-                `Failed to update Distribution with ID ${distributionId}`,
-              );
-            }
-
-            return update;
+            return await distribute(distributionRes, kv);
           }
           case DistributionState.CLOSED: {
             throw new GraphQLError("Distribution is in CLOSED state");
