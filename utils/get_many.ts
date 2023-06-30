@@ -1,7 +1,7 @@
 import { GraphQLError } from "../deps.ts";
 import { chunk, toArray } from "./mod.ts";
 
-const BATCH_SIZE = 10;
+export const BATCH_SIZE = 10;
 
 export async function* igetMany<T>(
   keys: Deno.KvKey[],
