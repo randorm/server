@@ -80,3 +80,11 @@ export function* ichunk<T>(iterable: Iterable<T>, size: number): Iterable<T[]> {
 export function chunk<T>(iterable: Iterable<T>, size: number): T[][] {
   return [...ichunk(iterable, size)];
 }
+
+export function* iflatten<T>(iterable: Iterable<Iterable<T>>): Iterable<T> {
+  for (const value of iterable) yield* value;
+}
+
+export function flatten<T>(iterable: Iterable<Iterable<T>>): T[] {
+  return [...iflatten(iterable)];
+}
