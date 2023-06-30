@@ -1,5 +1,5 @@
-import { chunk, GraphQLError } from "../deps.ts";
-import { toArray } from "./mod.ts";
+import { GraphQLError } from "../deps.ts";
+import { chunk, toArray } from "./mod.ts";
 
 const BATCH_SIZE = 10;
 

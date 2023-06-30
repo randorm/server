@@ -41,8 +41,8 @@ export function difference<T>(minuend: Set<T>, subtrahend: Set<T>): Set<T> {
   return new Set(idifference(minuend, subtrahend));
 }
 
-export function* ilimit<T>(iterable: Iterable<T>, bound: number): Iterable<T> {
-  if (!Number.isInteger(bound) || bound <= 0) {
+export function* ilimit<T>(iterable: Iterable<T>, size: number): Iterable<T> {
+  if (!Number.isInteger(size) || size <= 0) {
     throw new Error("Bound must be a positive integer");
   }
 
@@ -50,10 +50,33 @@ export function* ilimit<T>(iterable: Iterable<T>, bound: number): Iterable<T> {
   for (const value of iterable) {
     yield value;
 
-    if (++count === bound) return;
+    if (++count === size) return;
   }
 }
 
-export function limit<T>(iterable: Iterable<T>, bound: number): T[] {
-  return [...ilimit(iterable, bound)];
+export function limit<T>(iterable: Iterable<T>, size: number): T[] {
+  return [...ilimit(iterable, size)];
+}
+
+export function* ichunk<T>(iterable: Iterable<T>, size: number): Iterable<T[]> {
+  if (!Number.isInteger(size) || size <= 0) {
+    throw new Error("Sample size must be a positive integer");
+  }
+
+  let chunk = [];
+  for (const value of iterable) {
+    chunk.push(value);
+
+    if (chunk.length === size) {
+      yield chunk;
+
+      chunk = [];
+    }
+  }
+
+  if (chunk.length) yield chunk;
+}
+
+export function chunk<T>(iterable: Iterable<T>, size: number): T[][] {
+  return [...ichunk(iterable, size)];
 }

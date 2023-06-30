@@ -14,10 +14,10 @@ export function shuffle<T>(values: Iterable<T>): T[] {
   return shuffled;
 }
 
-export function sample<T>(population: Iterable<T>, k: number): T[] {
-  if (!Number.isInteger(k) || k <= 0) {
+export function sample<T>(population: Iterable<T>, size: number): T[] {
+  if (!Number.isInteger(size) || size <= 0) {
     throw new Error("Sample size must be a positive integer");
   }
 
-  return shuffle(population).slice(0, k);
+  return shuffle(population).slice(0, size);
 }
