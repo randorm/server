@@ -28,7 +28,7 @@ export async function* aichunk<T>(
   size: number,
 ): AsyncIterable<T[]> {
   if (!Number.isInteger(size) || size <= 0) {
-    throw new Error("Sample size must be a positive integer");
+    throw new Error("Chunk size must be a positive integer");
   }
 
   let chunk = [];

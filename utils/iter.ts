@@ -60,7 +60,7 @@ export function limit<T>(iterable: Iterable<T>, size: number): T[] {
 
 export function* ichunk<T>(iterable: Iterable<T>, size: number): Iterable<T[]> {
   if (!Number.isInteger(size) || size <= 0) {
-    throw new Error("Sample size must be a positive integer");
+    throw new Error("Chunk size must be a positive integer");
   }
 
   let chunk = [];
