@@ -1,12 +1,20 @@
-import { chunk, GraphQLError } from "../deps.ts";
+import { GraphQLError } from "../deps.ts";
 import type { DistributionModel, GroupModel, UserModel } from "../model/mod.ts";
 import { DistributionState } from "../model/mod.ts";
-import { amap, igetMany, map } from "../utils/mod.ts";
+import {
+  aichunk,
+  amap,
+  BATCH_SIZE,
+  chunk,
+  flatten,
+  igetMany,
+  map,
+} from "../utils/mod.ts";
 
 export interface Participant {
   readonly user: UserModel;
-  readonly subscriberIds: Set<number>;
   readonly subscriptionIds: Set<number>;
+  readonly subscriberIds: Set<number>;
 }
 
 export function magic(participants: Participant[]): Participant[][] {
@@ -18,37 +26,54 @@ export async function getParticipants(
   participantIds: Set<number>,
   kv: Deno.Kv,
 ): Promise<Participant[]> {
-  return await amap(
-    async (user) => {
-      const [subscriptionIdsRes, subscriberIdsRes] = await kv.getMany<[
-        Set<number>,
-        Set<number>,
-      ]>([
-        ["user:subscription_ids", user.id],
-        ["user:subscriber_ids", user.id],
-      ]);
-
-      if (subscriptionIdsRes.value === null) {
-        throw new GraphQLError(
-          `Subscription IDs of User with ID ${user.id} not found`,
+  return flatten(
+    await amap(
+      async (users) => {
+        const keys = flatten<Deno.KvKey>(
+          map(
+            (user) => [
+              ["user:subscription_ids", user.id],
+              ["user:subscriber_ids", user.id],
+            ],
+            users,
+          ),
         );
-      }
-      if (subscriberIdsRes.value === null) {
-        throw new GraphQLError(
-          `Subscriber IDs of User with ID ${user.id} not found`,
-        );
-      }
 
-      return <Participant> {
-        user,
-        subscriptionIds: subscriptionIdsRes.value,
-        subscriberIds: subscriberIdsRes.value,
-      };
-    },
-    igetMany<UserModel>(
-      map((userId) => ["user", userId], participantIds),
-      kv,
-      ([_part, userId]) => `User with ID ${userId} not found`,
+        const entries = await kv.getMany<Set<number>[]>(keys);
+
+        const participants = Array.from<Participant>({
+          length: users.length,
+        });
+
+        for (let i = 0; i < users.length; i++) {
+          const user = users[i];
+          const subscriptionIds = entries[i * 2].value;
+          const subscriberIds = entries[i * 2 + 1].value;
+
+          if (subscriptionIds === null) {
+            throw new GraphQLError(
+              `Subscription IDs of User with ID ${user.id} not found`,
+            );
+          }
+          if (subscriberIds === null) {
+            throw new GraphQLError(
+              `Subscriber IDs of User with ID ${user.id} not found`,
+            );
+          }
+
+          participants[i] = { user, subscriptionIds, subscriberIds };
+        }
+
+        return participants;
+      },
+      aichunk(
+        igetMany<UserModel>(
+          map((userId) => ["user", userId], participantIds),
+          kv,
+          ([_part, userId]) => `User with ID ${userId} not found`,
+        ),
+        BATCH_SIZE / 2,
+      ),
     ),
   );
 }
