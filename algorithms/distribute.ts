@@ -1,7 +1,7 @@
 import { GraphQLError, zip } from "../deps.ts";
 import type { DistributionModel, GroupModel, UserModel } from "../model/mod.ts";
 import { DistributionState } from "../model/mod.ts";
-import { getMany, map } from "../utils/mod.ts";
+import { amap, getMany, map } from "../utils/mod.ts";
 import { groupParticipants } from "./_magic.ts";
 
 export interface ParticipantNode {
@@ -40,7 +40,7 @@ export async function getParticipants(
   );
 }
 export async function commitGroup(
-  distribution: DistributionModel,
+  distributionRes: Deno.KvEntry<DistributionModel>,
   members: UserModel[],
   kv: Deno.Kv,
 ): Promise<number> {
@@ -56,12 +56,13 @@ export async function commitGroup(
 
   const group: GroupModel = {
     id: groupId,
-    distributionId: distribution.id,
+    distributionId: distributionRes.value.id,
     memberIds,
     createdAt: new Date(),
   };
 
   const groupCommitRes = await kv.atomic()
+    .check(distributionRes)
     .check(nextIdRes)
     .set(["group", group.id], group)
     .sum(["group_count"], 1n)
@@ -82,6 +83,7 @@ export async function commitGroup(
     const groupIds = new Set<number>([...groupIdsRes.value, group.id]);
 
     const memberCommitRes = await kv.atomic()
+      .check(distributionRes)
       .check(groupIdsRes)
       .set(["user:group_ids", memberId], groupIds)
       .sum(["user:group_count", memberId], 1n)
@@ -142,16 +144,19 @@ export async function distribute(
     ...groupParticipants(femaleParticipants),
   ];
 
-  const groupIds = new Set<number>();
-  for (const participantGroup of participantGroups) {
-    const groupId = await commitGroup(
-      distributionRes.value,
-      map((node) => node.user, participantGroup),
-      kv,
-    );
+  const groupIds = new Set<number>(
+    await amap<ParticipantNode[], number>(
+      async (participantGroup) => {
+        const members = map(
+          (participant) => participant.user,
+          participantGroup,
+        );
 
-    groupIds.add(groupId);
-  }
+        return await commitGroup(distributionRes, members, kv);
+      },
+      participantGroups,
+    ),
+  );
 
   const distributionCommitRes = await kv.atomic()
     .check(distributionRes)
