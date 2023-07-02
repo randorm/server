@@ -1,10 +1,10 @@
-import { GraphQLError } from "../deps.ts";
-import { chunk, toArray } from "./mod.ts";
+import { chunk, GraphQLError } from "../deps.ts";
+import { toArray } from "./mod.ts";
 
-export const BATCH_SIZE = 10;
+const BATCH_SIZE = 10;
 
 export async function* igetMany<T>(
-  keys: Deno.KvKey[],
+  keys: readonly Deno.KvKey[],
   kv: Deno.Kv,
   verdictor: (key: Deno.KvKey) => string,
 ): AsyncIterable<T> {
@@ -24,7 +24,7 @@ export async function* igetMany<T>(
 }
 
 export async function getMany<T>(
-  keys: Deno.KvKey[],
+  keys: readonly Deno.KvKey[],
   kv: Deno.Kv,
   verdictor: (key: Deno.KvKey) => string,
 ): Promise<T[]> {
