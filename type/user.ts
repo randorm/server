@@ -85,7 +85,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     views: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:views", id]);
 
         if (res.value === null) {
@@ -100,7 +100,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     viewedCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:viewed_count", id]);
 
         if (res.value === null) {
@@ -118,7 +118,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }) {
+      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
         assertOwner(user, id);
 
         const viewedIdsRes = await kv.get<Set<number>>(["user:viewed_ids", id]);
@@ -138,7 +138,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     subscriptionCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:subscription_count", id]);
 
         if (res.value === null) {
@@ -156,7 +156,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }) {
+      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
         assertOwner(user, id);
 
         const subscriptionIdsRes = await kv.get<Set<number>>([
@@ -181,7 +181,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     subscriberCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:subscriber_count", id]);
 
         if (res.value === null) {
@@ -199,7 +199,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }) {
+      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
         assertOwner(user, id);
 
         const subscriberIdsRes = await kv.get<Set<number>>([
@@ -224,7 +224,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:field_count", id]);
 
         if (res.value === null) {
@@ -240,7 +240,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<FieldModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>(["user:field_ids", id]);
 
         if (fieldIdsRes.value === null) {
@@ -262,7 +262,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(AnswerInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<AnswerModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>(["user:field_ids", id]);
 
         if (fieldIdsRes.value === null) {
@@ -281,7 +281,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     distributionCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:distribution_count", id]);
 
         if (res.value === null) {
@@ -299,7 +299,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(DistributionInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<DistributionModel[]> {
         const distributionIdsRes = await kv.get<Set<number>>([
           "user:distribution_ids",
           id,
@@ -326,7 +326,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     },
     groupCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user:group_count", id]);
 
         if (res.value === null) {
@@ -342,7 +342,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(GroupNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<GroupModel[]> {
         const groupIdsRes = await kv.get<Set<number>>(["user:group_ids", id]);
 
         if (groupIdsRes.value === null) {

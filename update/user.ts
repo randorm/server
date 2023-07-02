@@ -1,7 +1,16 @@
 import { GraphQLNonNull, GraphQLObjectType } from "../deps.ts";
+import type { UserModel } from "../model/mod.ts";
 import { UserNode } from "../type/mod.ts";
+import type { Node } from "../types.ts";
 
-export const MarkViewedUpdate = new GraphQLObjectType({
+export interface MarkViewedUpdateModel {
+  readonly user: UserModel;
+  readonly viewer: UserModel;
+}
+
+export const MarkViewedUpdate: Node<
+  MarkViewedUpdateModel
+> = new GraphQLObjectType({
   name: "MarkViewedUpdate",
   fields: {
     user: {
@@ -13,7 +22,14 @@ export const MarkViewedUpdate = new GraphQLObjectType({
   },
 });
 
-export const SubscribeUpdate = new GraphQLObjectType({
+export interface SubscribeUpdateModel {
+  readonly user: UserModel;
+  readonly subscriber: UserModel;
+}
+
+export const SubscribeUpdate: Node<
+  SubscribeUpdateModel
+> = new GraphQLObjectType({
   name: "SubscribeUpdate",
   fields: {
     user: {
@@ -25,7 +41,14 @@ export const SubscribeUpdate = new GraphQLObjectType({
   },
 });
 
-export const UnsubscribeUpdate = new GraphQLObjectType({
+export interface UnsubscribeUpdateModel {
+  readonly user: UserModel;
+  readonly unsubscriber: UserModel;
+}
+
+export const UnsubscribeUpdate: Node<
+  UnsubscribeUpdateModel
+> = new GraphQLObjectType({
   name: "UnsubscribeUpdate",
   fields: {
     user: {

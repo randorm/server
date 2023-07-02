@@ -19,7 +19,11 @@ export const GroupNode: Node<GroupModel> = new GraphQLObjectType({
     },
     distribution: {
       type: new GraphQLNonNull(ClosedDistributionNode),
-      async resolve({ distributionId }, _args, { kv }) {
+      async resolve(
+        { distributionId },
+        _args,
+        { kv },
+      ): Promise<DistributionModel> {
         const res = await kv.get<DistributionModel>([
           "distribution",
           distributionId,
@@ -34,13 +38,17 @@ export const GroupNode: Node<GroupModel> = new GraphQLObjectType({
         return res.value;
       },
     },
+    memberCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: ({ memberIds }): number => memberIds.size,
+    },
     members: {
       type: new GraphQLNonNull(
         new GraphQLList(
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ memberIds }, _args, { kv }) {
+      async resolve({ memberIds }, _args, { kv }): Promise<UserModel[]> {
         const members = await getMany<UserModel>(
           map((userId) => ["user", userId], memberIds),
           kv,

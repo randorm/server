@@ -8,9 +8,12 @@ import {
   GraphQLString,
 } from "../deps.ts";
 import type {
+  AnswerModel,
   ChoiceAnswerModel,
+  ChoiceFieldModel,
   FieldModel,
   TextAnswerModel,
+  TextFieldModel,
   UserModel,
 } from "../model/mod.ts";
 import { FieldType } from "../model/mod.ts";
@@ -43,7 +46,7 @@ export const AnswerInterface: Interface = new GraphQLInterfaceType({
       type: new GraphQLNonNull(DateScalar),
     },
   }),
-  resolveType({ type }) {
+  resolveType({ type }: AnswerModel) {
     switch (type) {
       case FieldType.TEXT:
         return "TextAnswer";
@@ -61,7 +64,7 @@ export const TextAnswerNode: Node<TextAnswerModel> = new GraphQLObjectType({
   fields: () => ({
     field: {
       type: new GraphQLNonNull(TextFieldNode),
-      async resolve({ fieldId }, _args, { kv }) {
+      async resolve({ fieldId }, _args, { kv }): Promise<TextFieldModel> {
         const res = await kv.get<FieldModel>(["field", fieldId]);
 
         if (res.value === null) {
@@ -77,7 +80,7 @@ export const TextAnswerNode: Node<TextAnswerModel> = new GraphQLObjectType({
     },
     respondent: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ respondentId }, _args, { kv }) {
+      async resolve({ respondentId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", respondentId]);
 
         if (res.value === null) {
@@ -113,7 +116,7 @@ export const ChoiceAnswerNode: Node<ChoiceAnswerModel> = new GraphQLObjectType({
     },
     field: {
       type: new GraphQLNonNull(ChoiceFieldNode),
-      async resolve({ fieldId }, _args, { kv }) {
+      async resolve({ fieldId }, _args, { kv }): Promise<ChoiceFieldModel> {
         const res = await kv.get<FieldModel>(["field", fieldId]);
 
         if (res.value === null) {
@@ -131,7 +134,7 @@ export const ChoiceAnswerNode: Node<ChoiceAnswerModel> = new GraphQLObjectType({
     },
     respondent: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ respondentId }, _args, { kv }) {
+      async resolve({ respondentId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", respondentId]);
 
         if (res.value === null) {

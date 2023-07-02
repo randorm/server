@@ -3,12 +3,19 @@ import {
   GraphQLObjectType,
   GraphQLUnionType,
 } from "../deps.ts";
+import type { DistributionModel, UserModel } from "../model/mod.ts";
 import { DistributionState } from "../model/mod.ts";
 import {
   AnsweringDistributionNode,
   GatheringDistributionNode,
   UserNode,
 } from "../type/mod.ts";
+import type { Node } from "../types.ts";
+
+export interface JoinDistributionUpdateModel {
+  readonly distribution: DistributionModel;
+  readonly user: UserModel;
+}
 
 export const JoinableDistributionUnion = new GraphQLUnionType({
   name: "JoinableDistribution",
@@ -16,7 +23,7 @@ export const JoinableDistributionUnion = new GraphQLUnionType({
     AnsweringDistributionNode,
     GatheringDistributionNode,
   ],
-  resolveType({ state }) {
+  resolveType({ state }: DistributionModel) {
     switch (state) {
       case DistributionState.ANSWERING:
         return "AnsweringDistribution";
@@ -26,7 +33,9 @@ export const JoinableDistributionUnion = new GraphQLUnionType({
   },
 });
 
-export const JoinDistributionUpdate = new GraphQLObjectType({
+export const JoinDistributionUpdate: Node<
+  JoinDistributionUpdateModel
+> = new GraphQLObjectType({
   name: "JoinDistributionUpdate",
   fields: {
     distribution: {
@@ -38,13 +47,18 @@ export const JoinDistributionUpdate = new GraphQLObjectType({
   },
 });
 
+export interface LeaveDistributionUpdateModel {
+  readonly distribution: DistributionModel;
+  readonly user: UserModel;
+}
+
 export const LeavableDistributionUnion = new GraphQLUnionType({
   name: "LeavableDistribution",
   types: [
     AnsweringDistributionNode,
     GatheringDistributionNode,
   ],
-  resolveType({ state }) {
+  resolveType({ state }: DistributionModel) {
     switch (state) {
       case DistributionState.ANSWERING:
         return "AnsweringDistribution";
@@ -54,7 +68,9 @@ export const LeavableDistributionUnion = new GraphQLUnionType({
   },
 });
 
-export const LeaveDistributionUpdate = new GraphQLObjectType({
+export const LeaveDistributionUpdate: Node<
+  LeaveDistributionUpdateModel
+> = new GraphQLObjectType({
   name: "LeaveDistributionUpdate",
   fields: {
     distribution: {

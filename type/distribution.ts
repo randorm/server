@@ -70,7 +70,7 @@ export const DistributionInterface = new GraphQLInterfaceType({
       type: new GraphQLNonNull(DateScalar),
     },
   }),
-  resolveType({ state }) {
+  resolveType({ state }: DistributionModel) {
     switch (state) {
       case DistributionState.PREPARING:
         return "PreparingDistribution";
@@ -98,7 +98,7 @@ export const PreparingDistributionNode: Node<
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -113,7 +113,7 @@ export const PreparingDistributionNode: Node<
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution:field_count", id]);
 
         if (res.value === null) {
@@ -131,7 +131,7 @@ export const PreparingDistributionNode: Node<
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<FieldModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>([
           "distribution:field_ids",
           id,
@@ -177,7 +177,7 @@ export const AnsweringDistributionNode: Node<
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -192,7 +192,7 @@ export const AnsweringDistributionNode: Node<
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution:field_count", id]);
 
         if (res.value === null) {
@@ -210,7 +210,7 @@ export const AnsweringDistributionNode: Node<
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<FieldModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>([
           "distribution:field_ids",
           id,
@@ -233,7 +233,7 @@ export const AnsweringDistributionNode: Node<
     },
     participantCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>([
           "distribution:participant_count",
           id,
@@ -254,14 +254,11 @@ export const AnsweringDistributionNode: Node<
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<UserModel[]> {
         const [
           maleParticipantIdsRes,
           femaleParticipantIdsRes,
-        ] = await kv.getMany<[
-          Set<number>,
-          Set<number>,
-        ]>([
+        ] = await kv.getMany<[Set<number>, Set<number>]>([
           ["distribution:male_participant_ids", id],
           ["distribution:female_participant_ids", id],
         ]);
@@ -316,7 +313,7 @@ export const GatheringDistributionNode: Node<
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -331,7 +328,7 @@ export const GatheringDistributionNode: Node<
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution:field_count", id]);
 
         if (res.value === null) {
@@ -349,7 +346,7 @@ export const GatheringDistributionNode: Node<
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<FieldModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>([
           "distribution:field_ids",
           id,
@@ -372,7 +369,7 @@ export const GatheringDistributionNode: Node<
     },
     participantCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>([
           "distribution:participant_count",
           id,
@@ -393,14 +390,11 @@ export const GatheringDistributionNode: Node<
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<UserModel[]> {
         const [
           maleParticipantIdsRes,
           femaleParticipantIdsRes,
-        ] = await kv.getMany<[
-          Set<number>,
-          Set<number>,
-        ]>([
+        ] = await kv.getMany<[Set<number>, Set<number>]>([
           ["distribution:male_participant_ids", id],
           ["distribution:female_participant_ids", id],
         ]);
@@ -455,7 +449,7 @@ export const ClosedDistributionNode: Node<
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -470,7 +464,7 @@ export const ClosedDistributionNode: Node<
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution:field_count", id]);
 
         if (res.value === null) {
@@ -488,7 +482,7 @@ export const ClosedDistributionNode: Node<
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<FieldModel[]> {
         const fieldIdsRes = await kv.get<Set<number>>([
           "distribution:field_ids",
           id,
@@ -511,7 +505,7 @@ export const ClosedDistributionNode: Node<
     },
     participantCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>([
           "distribution:participant_count",
           id,
@@ -532,14 +526,11 @@ export const ClosedDistributionNode: Node<
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<UserModel[]> {
         const [
           maleParticipantIdsRes,
           femaleParticipantIdsRes,
-        ] = await kv.getMany<[
-          Set<number>,
-          Set<number>,
-        ]>([
+        ] = await kv.getMany<[Set<number>, Set<number>]>([
           ["distribution:male_participant_ids", id],
           ["distribution:female_participant_ids", id],
         ]);
@@ -571,7 +562,7 @@ export const ClosedDistributionNode: Node<
     },
     groupCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution:group_count", id]);
 
         if (res.value === null) {
@@ -589,7 +580,7 @@ export const ClosedDistributionNode: Node<
           new GraphQLNonNull(GroupNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<GroupModel[]> {
         const groupIdsRes = await kv.get<Set<number>>([
           "distribution:group_ids",
           id,

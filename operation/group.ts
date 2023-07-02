@@ -20,7 +20,11 @@ export const GroupQuery: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { groupId }, { kv }) {
+      async resolve(
+        _root,
+        { groupId }: { groupId: number },
+        { kv },
+      ): Promise<GroupModel> {
         const res = await kv.get<GroupModel>(["group", groupId]);
 
         if (res.value === null) {
@@ -32,7 +36,7 @@ export const GroupQuery: Operation = new GraphQLObjectType({
     },
     groupCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["group_count"]);
 
         if (res.value === null) {
@@ -48,7 +52,7 @@ export const GroupQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(GroupNode),
         ),
       ),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<GroupModel[]> {
         const iter = kv.list<GroupModel>({ prefix: ["group"] });
 
         return await amap(({ value }) => value, iter);

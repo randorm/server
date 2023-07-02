@@ -32,7 +32,11 @@ export const FieldQuery: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { fieldId }, { kv }) {
+      async resolve(
+        _root,
+        { fieldId }: { fieldId: number },
+        { kv },
+      ): Promise<FieldModel> {
         const res = await kv.get<FieldModel>(["field", fieldId]);
 
         if (res.value === null) {
@@ -44,7 +48,7 @@ export const FieldQuery: Operation = new GraphQLObjectType({
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["field_count"]);
 
         if (res.value === null) {
@@ -60,7 +64,7 @@ export const FieldQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<FieldModel[]> {
         const iter = kv.list<FieldModel>({ prefix: ["field"] });
 
         return await amap(({ value }) => value, iter);
@@ -90,9 +94,12 @@ export const FieldMutation: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { format = null, sample = null, ...args },
+        { format = null, sample = null, ...args }: Pick<
+          TextFieldModel,
+          "required" | "question" | "format" | "sample"
+        >,
         { user, kv },
-      ) {
+      ): Promise<TextFieldModel> {
         assertEditor(user);
 
         const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);
@@ -147,7 +154,14 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           ),
         },
       },
-      async resolve(_root, args, { user, kv }) {
+      async resolve(
+        _root,
+        args: Pick<
+          ChoiceFieldModel,
+          "required" | "question" | "multiple" | "options"
+        >,
+        { user, kv },
+      ): Promise<ChoiceFieldModel> {
         assertEditor(user);
 
         const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);

@@ -1,4 +1,11 @@
 import { GraphQLNonNull, GraphQLObjectType } from "../deps.ts";
+import type {
+  ChoiceAnswerModel,
+  ChoiceFieldModel,
+  TextAnswerModel,
+  TextFieldModel,
+  UserModel,
+} from "../model/mod.ts";
 import {
   ChoiceAnswerNode,
   ChoiceFieldNode,
@@ -6,8 +13,17 @@ import {
   TextFieldNode,
   UserNode,
 } from "../type/mod.ts";
+import type { Node } from "../types.ts";
 
-export const SetTextAnswerUpdate = new GraphQLObjectType({
+export interface SetTextAnswerUpdateModel {
+  readonly user: UserModel;
+  readonly answer: TextAnswerModel;
+  readonly field: TextFieldModel;
+}
+
+export const SetTextAnswerUpdate: Node<
+  SetTextAnswerUpdateModel
+> = new GraphQLObjectType({
   name: "SetTextAnswerUpdate",
   fields: {
     user: {
@@ -22,7 +38,15 @@ export const SetTextAnswerUpdate = new GraphQLObjectType({
   },
 });
 
-export const SetChoiceAnswerUpdate = new GraphQLObjectType({
+export interface SetChoiceAnswerUpdateModel {
+  readonly user: UserModel;
+  readonly answer: ChoiceAnswerModel;
+  readonly field: ChoiceFieldModel;
+}
+
+export const SetChoiceAnswerUpdate: Node<
+  SetChoiceAnswerUpdateModel
+> = new GraphQLObjectType({
   name: "SetChoiceAnswerUpdate",
   fields: {
     user: {

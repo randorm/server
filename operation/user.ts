@@ -8,10 +8,15 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "../deps.ts";
-import type { UserModel } from "../model/mod.ts";
+import type { ProfileModel, UserModel } from "../model/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import { GenderEnum, UserNode } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
+import type {
+  MarkViewedUpdateModel,
+  SubscribeUpdateModel,
+  UnsubscribeUpdateModel,
+} from "../update/mod.ts";
 import {
   MarkViewedUpdate,
   SubscribeUpdate,
@@ -29,7 +34,11 @@ export const UserQuery: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { userId }, { kv }) {
+      async resolve(
+        _root,
+        { userId }: { userId: number },
+        { kv },
+      ): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", userId]);
 
         if (res.value === null) {
@@ -41,11 +50,11 @@ export const UserQuery: Operation = new GraphQLObjectType({
     },
     me: {
       type: new GraphQLNonNull(UserNode),
-      resolve: (_root, _args, { user }) => user,
+      resolve: (_root, _args, { user }): UserModel => user,
     },
     userCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["user_count"]);
 
         if (res.value === null) {
@@ -61,7 +70,7 @@ export const UserQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<UserModel[]> {
         const iter = kv.list<UserModel>({ prefix: ["user"] });
 
         return await amap(({ value }) => value, iter);
@@ -82,7 +91,11 @@ export const UserQuery: Operation = new GraphQLObjectType({
           defaultValue: 5,
         },
       },
-      async resolve(_root, { amount, distributionId }, context) {
+      async resolve(
+        _root,
+        { distributionId, amount }: { distributionId: number; amount: number },
+        context,
+      ): Promise<UserModel[]> {
         if (amount < 1 || amount > 10) {
           throw new GraphQLError("Amount must be between 1 and 10");
         }
@@ -115,7 +128,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLString),
         },
       },
-      async resolve(_root, args, { user, userRes, kv }) {
+      async resolve(
+        _root,
+        args: ProfileModel,
+        { user, userRes, kv },
+      ): Promise<UserModel> {
         assertUserProfile(args);
 
         if (args.gender !== user.profile.gender) {
@@ -162,7 +179,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { userId }, { kv, user }) {
+      async resolve(
+        _root,
+        { userId }: { userId: number },
+        { kv, user },
+      ): Promise<MarkViewedUpdateModel> {
         if (userId === user.id) {
           throw new GraphQLError("User cannot view themselves");
         }
@@ -214,7 +235,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { userId }, { kv, user }) {
+      async resolve(
+        _root,
+        { userId }: { userId: number },
+        { kv, user },
+      ): Promise<SubscribeUpdateModel> {
         if (userId === user.id) {
           throw new GraphQLError("User cannot subscribe to themselves");
         }
@@ -298,7 +323,11 @@ export const UserMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { userId }, { kv, user }) {
+      async resolve(
+        _root,
+        { userId }: { userId: number },
+        { kv, user },
+      ): Promise<UnsubscribeUpdateModel> {
         if (userId === user.id) {
           throw new GraphQLError("User cannot unsubscribe from themselves");
         }

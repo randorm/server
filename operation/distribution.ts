@@ -16,11 +16,15 @@ import {
   PreparingDistributionNode,
 } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
+import type {
+  JoinDistributionUpdateModel,
+  LeaveDistributionUpdateModel,
+} from "../update/mod.ts";
 import {
   JoinDistributionUpdate,
   LeaveDistributionUpdate,
 } from "../update/mod.ts";
-import { amap, filter } from "../utils/mod.ts";
+import { amap, difference, filter, getMany, map } from "../utils/mod.ts";
 
 export const DistributionQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -32,7 +36,11 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { distributionId }, { kv }) {
+      async resolve(
+        _root,
+        { distributionId }: { distributionId: number },
+        { kv },
+      ): Promise<DistributionModel> {
         const res = await kv.get<DistributionModel>([
           "distribution",
           distributionId,
@@ -49,7 +57,7 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
     },
     distributionCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["distribution_count"]);
 
         if (res.value === null) {
@@ -65,7 +73,7 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(DistributionInterface),
         ),
       ),
-      async resolve(_root, _args, { kv }) {
+      async resolve(_root, _args, { kv }): Promise<DistributionModel[]> {
         const iter = kv.list<DistributionModel>({ prefix: ["distribution"] });
 
         return await amap(({ value }) => value, iter);
@@ -84,7 +92,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLString),
         },
       },
-      async resolve(_root, { name }, { user, kv }) {
+      async resolve(
+        _root,
+        { name }: { name: string },
+        { user, kv },
+      ): Promise<DistributionModel> {
         assertEditor(user);
 
         const nextIdRes = await kv.get<Deno.KvU64>(["distribution_next_id"]);
@@ -133,7 +145,14 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(DistributionStateEnum),
         },
       },
-      async resolve(_root, { distributionId, state }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId, state }: {
+          distributionId: number;
+          state: DistributionState;
+        },
+        { user, kv },
+      ): Promise<DistributionModel> {
         assertEditor(user);
 
         const distributionRes = await kv.get<DistributionModel>([
@@ -237,7 +256,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLString),
         },
       },
-      async resolve(_root, { distributionId, name }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId, name }: { distributionId: number; name: string },
+        { user, kv },
+      ): Promise<DistributionModel> {
         assertEditor(user);
 
         const distributionRes = await kv.get<DistributionModel>([
@@ -273,111 +296,41 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         return update;
       },
     },
-    addDistributionField: {
+    updateDistributionFields: {
       type: new GraphQLNonNull(PreparingDistributionNode),
       args: {
         distributionId: {
           type: new GraphQLNonNull(GraphQLInt),
         },
-        fieldId: {
-          type: new GraphQLNonNull(GraphQLInt),
+        fieldIds: {
+          type: new GraphQLNonNull(
+            new GraphQLList(
+              new GraphQLNonNull(GraphQLInt),
+            ),
+          ),
         },
       },
-      async resolve(_root, { distributionId, fieldId }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId, fieldIds }: {
+          distributionId: number;
+          fieldIds: readonly number[];
+        },
+        { user, kv },
+      ): Promise<DistributionModel> {
         assertEditor(user);
 
         const [
           distributionRes,
-          fieldRes,
           fieldIdsRes,
-        ] = await kv.getMany<[
-          DistributionModel,
-          FieldModel,
-          Set<number>,
-        ]>([
+        ] = await kv.getMany<[DistributionModel, Set<number>]>([
           ["distribution", distributionId],
-          ["field", fieldId],
           ["distribution:field_ids", distributionId],
         ]);
 
         if (distributionRes.value === null) {
           throw new GraphQLError(
             `Distribution with ID ${distributionId} not found`,
-          );
-        }
-        if (fieldRes.value === null) {
-          throw new GraphQLError(`Field with ID ${fieldId} not found`);
-        }
-        if (fieldIdsRes.value === null) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} not found`,
-          );
-        }
-
-        if (distributionRes.value.state !== DistributionState.PREPARING) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} is not in PREPARING state`,
-          );
-        }
-
-        if (fieldIdsRes.value.has(fieldId)) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} already has Field with ID ${fieldId}`,
-          );
-        }
-
-        const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
-
-        const commitRes = await kv.atomic()
-          .check(fieldIdsRes)
-          .set(["distribution:field_ids", distributionId], fieldIds)
-          .sum(["distribution:field_count", distributionId], 1n)
-          .commit();
-
-        if (!commitRes.ok) {
-          throw new GraphQLError(
-            `Failed to update Distribution with ID ${distributionId}`,
-          );
-        }
-
-        return distributionRes.value;
-      },
-    },
-    removeDistributionField: {
-      type: new GraphQLNonNull(PreparingDistributionNode),
-      args: {
-        distributionId: {
-          type: new GraphQLNonNull(GraphQLInt),
-        },
-        fieldId: {
-          type: new GraphQLNonNull(GraphQLInt),
-        },
-      },
-      async resolve(_root, { distributionId, fieldId }, { user, kv }) {
-        assertEditor(user);
-
-        const [
-          distributionRes,
-          fieldCountRes,
-          fieldIdsRes,
-        ] = await kv.getMany<[
-          DistributionModel,
-          Deno.KvU64,
-          Set<number>,
-        ]>([
-          ["distribution", distributionId],
-          ["distribution:field_count", distributionId],
-          ["distribution:field_ids", distributionId],
-        ]);
-
-        if (distributionRes.value === null) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} not found`,
-          );
-        }
-        if (fieldCountRes.value === null) {
-          throw new GraphQLError(
-            `Field count of Distribution with ID ${distributionId} not found`,
           );
         }
         if (fieldIdsRes.value === null) {
@@ -392,22 +345,30 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           );
         }
 
-        if (!fieldIdsRes.value.has(fieldId)) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} does not have Field with ID ${fieldId}`,
-          );
+        const uniqueFieldIds = new Set(fieldIds);
+
+        if (uniqueFieldIds.size !== fieldIds.length) {
+          throw new GraphQLError("Field IDs must be unique");
         }
 
-        const fieldIds = new Set<number>([...fieldIdsRes.value, fieldId]);
+        const unverifiedFieldIds = difference(
+          uniqueFieldIds,
+          fieldIdsRes.value,
+        );
+
+        await getMany<FieldModel>(
+          map((fieldId) => ["field", fieldId], unverifiedFieldIds),
+          kv,
+          ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
+        );
 
         const commitRes = await kv.atomic()
-          .check(fieldCountRes)
-          .check(fieldIdsRes)
+          .check(distributionRes)
           .set(
             ["distribution:field_count", distributionId],
-            new Deno.KvU64(BigInt(fieldIds.size)),
+            new Deno.KvU64(BigInt(uniqueFieldIds.size)),
           )
-          .set(["distribution:field_ids", distributionId], fieldIds)
+          .set(["distribution:field_ids", distributionId], uniqueFieldIds)
           .commit();
 
         if (!commitRes.ok) {
@@ -426,7 +387,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { distributionId }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId }: { distributionId: number },
+        { user, kv },
+      ): Promise<number> {
         assertEditor(user);
 
         const distributionRes = await kv.get<DistributionModel>([
@@ -469,7 +434,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { distributionId }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId }: { distributionId: number },
+        { user, kv },
+      ): Promise<JoinDistributionUpdateModel> {
         const participantIdsKey = [
           user.profile.gender === Gender.MALE
             ? "distribution:male_participant_ids"
@@ -567,7 +536,11 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLInt),
         },
       },
-      async resolve(_root, { distributionId }, { user, kv }) {
+      async resolve(
+        _root,
+        { distributionId }: { distributionId: number },
+        { user, kv },
+      ): Promise<LeaveDistributionUpdateModel> {
         const participantIdsKey = [
           user.profile.gender === Gender.MALE
             ? "distribution:male_participant_ids"

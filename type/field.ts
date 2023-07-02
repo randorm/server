@@ -11,7 +11,10 @@ import {
 } from "../deps.ts";
 import type {
   AnswerModel,
+  ChoiceAnswerModel,
   ChoiceFieldModel,
+  FieldModel,
+  TextAnswerModel,
   TextFieldModel,
   UserModel,
 } from "../model/mod.ts";
@@ -69,7 +72,7 @@ export const FieldInterface: Interface = new GraphQLInterfaceType({
       type: new GraphQLNonNull(DateScalar),
     },
   }),
-  resolveType({ type }) {
+  resolveType({ type }: FieldModel) {
     switch (type) {
       case FieldType.TEXT:
         return "TextField";
@@ -93,7 +96,7 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -117,7 +120,7 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
     },
     answerCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["field:answer_count", id]);
 
         if (res.value === null) {
@@ -135,7 +138,7 @@ export const TextFieldNode: Node<TextFieldModel> = new GraphQLObjectType({
           new GraphQLNonNull(TextAnswerNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<TextAnswerModel[]> {
         const iter = kv.list<AnswerModel>({ prefix: ["answer", id] });
 
         const answers = [];
@@ -172,7 +175,7 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
     },
     creator: {
       type: new GraphQLNonNull(UserNode),
-      async resolve({ creatorId }, _args, { kv }) {
+      async resolve({ creatorId }, _args, { kv }): Promise<UserModel> {
         const res = await kv.get<UserModel>(["user", creatorId]);
 
         if (res.value === null) {
@@ -200,7 +203,7 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
     },
     answerCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<number> {
         const res = await kv.get<Deno.KvU64>(["field:answer_count", id]);
 
         if (res.value === null) {
@@ -218,7 +221,7 @@ export const ChoiceFieldNode: Node<ChoiceFieldModel> = new GraphQLObjectType({
           new GraphQLNonNull(ChoiceAnswerNode),
         ),
       ),
-      async resolve({ id }, _args, { kv }) {
+      async resolve({ id }, _args, { kv }): Promise<ChoiceAnswerModel[]> {
         const iter = kv.list<AnswerModel>({ prefix: ["answer", id] });
 
         const answers = [];
