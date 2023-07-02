@@ -145,7 +145,7 @@ export async function distribute(
   ];
 
   const groupIds = new Set<number>(
-    await amap<ParticipantNode[], number>(
+    await amap(
       async (participantGroup) => {
         const members = map(
           (participant) => participant.user,
