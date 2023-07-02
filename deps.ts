@@ -1,3 +1,4 @@
+export { chunk, zip } from "https://deno.land/std@0.192.0/collections/mod.ts";
 export {
   GraphQLBoolean,
   GraphQLEnumType,
