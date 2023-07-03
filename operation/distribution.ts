@@ -394,15 +394,21 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
       ): Promise<number> {
         assertEditor(user);
 
-        const distributionRes = await kv.get<DistributionModel>([
-          "distribution",
-          distributionId,
+        const [
+          distributionRes,
+          distributionCountRes,
+        ] = await kv.getMany<[DistributionModel, Deno.KvU64]>([
+          ["distribution", distributionId],
+          ["distribution_count"],
         ]);
 
         if (distributionRes.value === null) {
           throw new GraphQLError(
             `Distribution with ID ${distributionId} not found`,
           );
+        }
+        if (distributionCountRes.value === null) {
+          throw new GraphQLError("Distribution count not found");
         }
 
         if (distributionRes.value.state !== DistributionState.PREPARING) {
@@ -413,9 +419,14 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
 
         const commitRes = await kv.atomic()
           .check(distributionRes)
+          .check(distributionCountRes)
           .delete(["distribution", distributionId])
           .delete(["distribution:field_ids", distributionId])
           .delete(["distribution:field_count", distributionId])
+          .set(
+            ["distribution_count"],
+            new Deno.KvU64(distributionCountRes.value.value - 1n),
+          )
           .commit();
 
         if (!commitRes.ok) {
