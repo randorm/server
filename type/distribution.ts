@@ -74,6 +74,8 @@ export const DistributionInterface = new GraphQLInterfaceType({
     switch (state) {
       case DistributionState.PREPARING:
         return "PreparingDistribution";
+      case DistributionState.ANSWERING:
+        return "AnsweringDistribution";
       case DistributionState.GATHERING:
         return "GatheringDistribution";
       case DistributionState.CLOSED:
