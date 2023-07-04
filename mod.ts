@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.191.0/http/server.ts";
 import { Status } from "https://deno.land/std@0.192.0/http/http_status.ts";
 import { renderPlaygroundPage } from "https://esm.sh/graphql-playground-html@1.6.30";
 import { graphql } from "https://esm.sh/graphql@16.5.0";
-import { GraphQLError, GraphQLSchema } from "./deps.ts";
+import { Bot, GraphQLError, GraphQLSchema } from "./deps.ts";
 import type { UserModel } from "./model/mod.ts";
 import { Gender, Role } from "./model/mod.ts";
 import { Mutation, Query } from "./operation/mod.ts";
@@ -165,6 +165,18 @@ if (userNextIdRes.value === null || userCountRes.value === null) {
 
 ////////////////////////////////////////////////////////////////
 
+// Step 4. Create a Telegram Bot instance.
+
+const BOT_TOKEN = Deno.env.get("BOT_TOKEN");
+
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN is not defined");
+}
+
+const bot = new Bot(BOT_TOKEN);
+
+////////////////////////////////////////////////////////////////
+
 // NodeContext.
 
 async function createUser(
@@ -247,7 +259,7 @@ async function getUserRes(userId: number): Promise<Deno.KvEntry<UserModel>> {
 async function createContext(userId: number): Promise<NodeContext> {
   const userRes = await getUserRes(userId);
 
-  return { kv, userRes, user: userRes.value };
+  return { kv, bot, userRes, user: userRes.value };
 }
 
 // Endpoint config.
