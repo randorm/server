@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.191.0/http/server.ts";
 import { Status } from "https://deno.land/std@0.192.0/http/http_status.ts";
 import { renderPlaygroundPage } from "https://esm.sh/graphql-playground-html@1.6.30";
 import { graphql } from "https://esm.sh/graphql@16.5.0";
+import { composer } from "./bot/mod.ts";
 import { Bot, GraphQLError, GraphQLSchema } from "./deps.ts";
 import type { UserModel } from "./model/mod.ts";
 import { Gender, Role } from "./model/mod.ts";
@@ -175,6 +176,8 @@ if (!BOT_TOKEN) {
 
 const bot = new Bot(BOT_TOKEN);
 
+bot.use(composer);
+
 ////////////////////////////////////////////////////////////////
 
 // NodeContext.
@@ -329,3 +332,5 @@ serve(
   },
   { port: PORT },
 );
+
+bot.start();
