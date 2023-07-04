@@ -24,7 +24,14 @@ import {
   JoinDistributionUpdate,
   LeaveDistributionUpdate,
 } from "../update/mod.ts";
-import { amap, difference, filter, getMany, map } from "../utils/mod.ts";
+import {
+  amap,
+  difference,
+  filter,
+  getMany,
+  igetMany,
+  map,
+} from "../utils/mod.ts";
 
 export const DistributionQuery: Operation = new GraphQLObjectType({
   name: "Query",
@@ -459,14 +466,20 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
 
         const [
           distributionRes,
+          distributionFieldIdsRes,
+          userFieldIdsRes,
           participantIdsRes,
           distributionIdsRes,
         ] = await kv.getMany<[
           DistributionModel,
           Set<number>,
           Set<number>,
+          Set<number>,
+          Set<number>,
         ]>([
           ["distribution", distributionId],
+          ["distribution:field_ids", distributionId],
+          ["user:field_ids", user.id],
           participantIdsKey,
           ["user:distribution_ids", user.id],
         ]);
@@ -474,6 +487,16 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
         if (distributionRes.value === null) {
           throw new GraphQLError(
             `Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (distributionFieldIdsRes.value === null) {
+          throw new GraphQLError(
+            `Field IDs of Distribution with ID ${distributionId} not found`,
+          );
+        }
+        if (userFieldIdsRes.value === null) {
+          throw new GraphQLError(
+            `Field IDs of User with ID ${user.id} not found`,
           );
         }
         if (participantIdsRes.value === null) {
@@ -494,6 +517,25 @@ export const DistributionMutation: Operation = new GraphQLObjectType({
           throw new GraphQLError(
             `Distribution with ID ${distributionId} is not in ANSWERING or GATHERING state`,
           );
+        }
+
+        const unansweredFieldIds = difference(
+          distributionFieldIdsRes.value,
+          userFieldIdsRes.value,
+        );
+
+        if (unansweredFieldIds.size) {
+          const iter = igetMany<FieldModel>(
+            map((fieldId) => ["field", fieldId], unansweredFieldIds),
+            kv,
+            ([_part, fieldId]) => `Field with ID ${fieldId} not found`,
+          );
+
+          for await (const field of iter) {
+            if (field.required) {
+              throw new GraphQLError(`Field with ID ${field.id} is required`);
+            }
+          }
         }
 
         const inParticipantIds = participantIdsRes.value.has(user.id);
