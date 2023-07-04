@@ -37,7 +37,7 @@ export async function recommend(
         : "distribution:female_participant_ids",
       distributionId,
     ],
-    ["user:subscriber_ids", distributionId],
+    ["user:subscriber_ids", user.id],
     ["user:subscription_ids", user.id],
     ["user:viewed_ids", user.id],
   ]);
