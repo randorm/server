@@ -14,7 +14,7 @@ test:
   script:
     - deno test --coverage=cov
     - deno coverage cov --lcov --output=coverage.lcov
-    - deno run --allow-read --allow-write https://deno.land/x/lcov-cobertura/mod.ts coverage.lcov -o coverage.xml
+    - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts coverage.lcov -o coverage.xml
   artifacts:
     reports:
       coverage_report:
