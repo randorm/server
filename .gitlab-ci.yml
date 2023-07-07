@@ -12,9 +12,10 @@ test:
   stage: test
   image: denoland/deno:alpine
   script:
-    - deno test --coverage=cov
-    - deno coverage cov --lcov --output=coverage.lcov
-    - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts coverage.lcov -o coverage.xml
+    - deno test --coverage=cov --unstable
+    - deno coverage cov --lcov --output=lcov.info
+    - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts lcov.info -o coverage.xml
+    - deno run --allow-read https://deno.land/x/code_coverage@0.2.1/cli.ts
   artifacts:
     reports:
       coverage_report:
