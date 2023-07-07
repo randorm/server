@@ -1,3 +1,6 @@
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
 stages:
   - lint
   - test
@@ -16,6 +19,7 @@ test:
     - deno coverage cov --lcov --output=lcov.info
     - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts lcov.info -o coverage.xml
     - deno run --allow-read https://deno.land/x/code_coverage@0.2.1/cli.ts
+  coverage: /Totals:.*?\d+\.\d+\%/
   artifacts:
     reports:
       coverage_report:
