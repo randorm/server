@@ -1,15 +1,12 @@
-import type { Bot, GraphQLInterfaceType, GraphQLObjectType } from "./deps.ts";
-import type { UserModel } from "./model/mod.ts";
+import type { Bot } from "./deps.ts";
+import type { UserModel } from "./services/database/model/mod.ts";
 
-export type Interface = GraphQLInterfaceType;
-
-export interface NodeContext {
+export interface ServerContext {
   readonly kv: Deno.Kv;
   readonly bot: Bot;
+}
+
+export interface UserContext extends ServerContext {
   readonly userRes: Deno.KvEntry<UserModel>;
   readonly user: UserModel;
 }
-
-export type Node<Model> = GraphQLObjectType<Model, NodeContext>;
-
-export type Operation = Node<void>;
