@@ -1,4 +1,8 @@
 export function randomInt(lower: number, upper: number): number {
+  if (!Number.isInteger(lower) || !Number.isInteger(upper)) {
+    throw new Error("Bounds must be integers");
+  }
+
   return lower + Math.floor(Math.random() * (upper - lower + 1));
 }
 
