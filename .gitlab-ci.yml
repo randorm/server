@@ -1,0 +1,22 @@
+stages:
+  - lint
+  - test
+
+lint:
+  stage: lint
+  image: denoland/deno:alpine
+  script:
+    - deno lint --unstable
+
+test:
+  stage: test
+  image: denoland/deno:alpine
+  script:
+    - deno test --coverage=cov
+    - deno coverage cov --lcov --output=coverage.lcov
+    - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts coverage.lcov -o coverage.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
