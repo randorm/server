@@ -7,13 +7,13 @@ export function assertChoiceAnswer(
 ) {
   if (!answer.indices.size) {
     throw new GraphQLError(
-      `Answer to ChoiceField with ID ${field.id} is empty`,
+      `Answer to ChoiceField with ID ${field.id} from User with ID ${answer.respondentId} is empty`,
     );
   }
 
   if (!field.multiple && answer.indices.size > 1) {
     throw new GraphQLError(
-      `Answer to ChoiceField with ID ${field.id} is multiple`,
+      `Answer to ChoiceField with ID ${field.id} from User with ID ${answer.respondentId} is not multiple`,
     );
   }
 

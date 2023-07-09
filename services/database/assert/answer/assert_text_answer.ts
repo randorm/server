@@ -10,6 +10,7 @@ export function assertTextAnswer(
       `Answer to TextField with ID ${field.id} from User with ID ${answer.respondentId} is empty`,
     );
   }
+
   if (answer.value.length > 4096) {
     throw new GraphQLError(
       `Answer to TextField with ID ${field.id} from User with ID ${answer.respondentId} is too long`,
