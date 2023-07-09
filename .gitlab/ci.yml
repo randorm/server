@@ -21,8 +21,8 @@ test:
   stage: test
   image: denoland/deno:alpine
   script:
-    - deno test --coverage=cov --unstable
-    - deno coverage cov --lcov --output=lcov.info
+    - deno test --coverage=.coverage --unstable
+    - deno coverage --exclude=fixtures --exclude=test --lcov  --output=lcov.info .coverage
     - deno run --allow-read --allow-write https://deno.land/x/lcov_cobertura/mod.ts lcov.info -o coverage.xml
     - deno run --allow-read https://deno.land/x/code_coverage@0.2.1/cli.ts
   coverage: /Totals:.*?\d+\.\d+\%/
