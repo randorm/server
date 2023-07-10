@@ -1,22 +1,12 @@
 import { Application, Bot, oakCors } from "./deps.ts";
 import { router } from "./routes/mod.ts";
 import type { ServerContext } from "./types.ts";
-import { setupKeys } from "./utils/mod.ts";
-
-/**
- * Version of the key schema.
- */
-const KEY_VERSION = "0.2.0";
-/**
- * Key groups to setup.
- */
-const KEY_GROUPS = ["distribution", "field", "group", "user"];
-/**
- * Port to listen on.
- */
-const PORT = 3000;
-
-////////////////////////////////////////////////////////////////
+import {
+  PORT,
+  setupKeys,
+  STORAGE_KEY_GROUPS,
+  STORAGE_VERSION,
+} from "./utils/mod.ts";
 
 // Step 1.1. Create a connection to the database.
 
@@ -24,7 +14,7 @@ const kv = await Deno.openKv();
 
 // Step 1.2. Setup the database keys.
 
-await setupKeys(kv, KEY_VERSION, KEY_GROUPS);
+await setupKeys(kv, STORAGE_VERSION, STORAGE_KEY_GROUPS);
 
 ////////////////////////////////////////////////////////////////
 
@@ -46,21 +36,46 @@ const bot = new Bot(BOT_TOKEN);
 
 ////////////////////////////////////////////////////////////////
 
-// Step 3.1. Create an Application instance.
+// Step 3.1. Get a JWK.
+
+const JWK = Deno.env.get("JWK");
+
+if (!JWK) {
+  throw new Error("Missing `JWK` environment variable");
+}
+
+// Step 3.2. Create a CryptoKey instance.
+
+const jwk = await crypto.subtle.importKey(
+  "jwk",
+  JSON.parse(JWK),
+  { name: "HMAC", hash: "SHA-512" },
+  true,
+  ["sign", "verify"],
+);
+
+////////////////////////////////////////////////////////////////
+
+// Step 4.1. Create an Application instance.
 
 const app = new Application<ServerContext>({
-  state: { kv, bot },
+  state: {
+    kv,
+    botToken: BOT_TOKEN,
+    bot,
+    jwk,
+  },
 });
 
-// Step 3.2.1. Register the router.
+// Step 4.2.1. Register the router.
 
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// Step 3.2.2. Register CORS middleware.
+// Step 4.2.2. Register CORS middleware.
 
 app.use(oakCors());
 
-// Step 3.3. Start the server.
+// Step 4.3. Start the server.
 
 await app.listen({ port: PORT });
