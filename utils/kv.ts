@@ -1,8 +1,5 @@
 import { chunk, GraphQLError } from "../deps.ts";
-import { toArray } from "./mod.ts";
-
-const VERSION_KEY = "_version";
-const BATCH_SIZE = 10;
+import { STORAGE_BATCH_SIZE, STORAGE_VERSION_KEY, toArray } from "./mod.ts";
 
 export async function setupKeyGroup<T>(
   name: string,
@@ -49,7 +46,7 @@ export async function setupKeys<T>(
   version: T,
   keyGroups: readonly string[],
 ): Promise<void> {
-  const versionRes = await kv.get<T>([VERSION_KEY]);
+  const versionRes = await kv.get<T>([STORAGE_VERSION_KEY]);
 
   if (versionRes.value === version) return;
 
@@ -59,11 +56,11 @@ export async function setupKeys<T>(
 
   const commitRes = await kv.atomic()
     .check(versionRes)
-    .set([VERSION_KEY], version)
+    .set([STORAGE_VERSION_KEY], version)
     .commit();
 
   if (!commitRes.ok) {
-    throw new Error(`Failed to setup \`${VERSION_KEY}\` key`);
+    throw new Error(`Failed to setup \`${STORAGE_VERSION_KEY}\` key`);
   }
 }
 
@@ -72,7 +69,7 @@ export async function* igetMany<T>(
   kv: Deno.Kv,
   verdictor: (key: Deno.KvKey) => string,
 ): AsyncIterable<T> {
-  const portions = chunk(keys, BATCH_SIZE);
+  const portions = chunk(keys, STORAGE_BATCH_SIZE);
 
   for (const portion of portions) {
     const batch = await kv.getMany<T[]>(portion);
