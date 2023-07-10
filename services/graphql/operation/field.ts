@@ -8,17 +8,16 @@ import {
   GraphQLString,
 } from "../../../deps.ts";
 import { amap } from "../../../utils/mod.ts";
-import {
-  assertChoiceField,
-  assertEditor,
-  assertTextField,
-} from "../../database/assert/mod.ts";
+import { assertAuthenticated } from "../../database/assert/mod.ts";
 import type {
   ChoiceFieldModel,
   FieldModel,
   TextFieldModel,
 } from "../../database/model/mod.ts";
-import { FieldType } from "../../database/model/mod.ts";
+import {
+  createChoiceField,
+  createTextField,
+} from "../../database/operation/mod.ts";
 import { ChoiceFieldNode, FieldInterface, TextFieldNode } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
 
@@ -98,40 +97,11 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           TextFieldModel,
           "required" | "question" | "format" | "sample"
         >,
-        { user, kv },
+        context,
       ): Promise<TextFieldModel> {
-        assertEditor(user);
+        assertAuthenticated(context);
 
-        const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);
-
-        if (nextRes.value === null) {
-          throw new GraphQLError("Next Field ID not found");
-        }
-
-        const field: TextFieldModel = {
-          id: Number(nextRes.value),
-          type: FieldType.TEXT,
-          creatorId: user.id,
-          ...args,
-          format,
-          sample,
-          createdAt: new Date(),
-        };
-
-        assertTextField(field);
-
-        const commitRes = await kv.atomic()
-          .set(["field", field.id], field)
-          .set(["field:answer_count", field.id], new Deno.KvU64(0n))
-          .sum(["field_count"], 1n)
-          .sum(["field_next_id"], 1n)
-          .commit();
-
-        if (!commitRes.ok) {
-          throw new GraphQLError("Failed to create TextField");
-        }
-
-        return field;
+        return await createTextField(context, { format, sample, ...args });
       },
     },
     createChoiceField: {
@@ -160,38 +130,11 @@ export const FieldMutation: Operation = new GraphQLObjectType({
           ChoiceFieldModel,
           "required" | "question" | "multiple" | "options"
         >,
-        { user, kv },
+        context,
       ): Promise<ChoiceFieldModel> {
-        assertEditor(user);
+        assertAuthenticated(context);
 
-        const nextRes = await kv.get<Deno.KvU64>(["field_next_id"]);
-
-        if (nextRes.value === null) {
-          throw new GraphQLError("Next Field ID not found");
-        }
-
-        const field: ChoiceFieldModel = {
-          id: Number(nextRes.value),
-          type: FieldType.CHOICE,
-          creatorId: user.id,
-          ...args,
-          createdAt: new Date(),
-        };
-
-        assertChoiceField(field);
-
-        const commitRes = await kv.atomic()
-          .set(["field", field.id], field)
-          .set(["field:answer_count", field.id], new Deno.KvU64(0n))
-          .sum(["field_count"], 1n)
-          .sum(["field_next_id"], 1n)
-          .commit();
-
-        if (!commitRes.ok) {
-          throw new GraphQLError("Failed to create ChoiceField");
-        }
-
-        return field;
+        return await createChoiceField(context, args);
       },
     },
   },
