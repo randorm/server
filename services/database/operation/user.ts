@@ -1,6 +1,6 @@
 import { GraphQLError } from "../../../deps.ts";
 import type { ServerContext, UserContext } from "../../../types.ts";
-import { filter } from "../../../utils/mod.ts";
+import { amap, filter } from "../../../utils/mod.ts";
 import type {
   MarkViewedUpdateModel,
   SubscribeUpdateModel,
@@ -9,6 +9,35 @@ import type {
 import { assertUserProfile } from "../assert/mod.ts";
 import type { ProfileModel, UserModel } from "../model/mod.ts";
 import { Role } from "../model/mod.ts";
+
+export async function user(
+  { kv }: ServerContext,
+  { userId }: { userId: number },
+): Promise<UserModel> {
+  const res = await kv.get<UserModel>(["user", userId]);
+
+  if (res.value === null) {
+    throw new GraphQLError(`User with ID ${userId} not found`);
+  }
+
+  return res.value;
+}
+
+export async function userCount({ kv }: ServerContext): Promise<number> {
+  const res = await kv.get<Deno.KvU64>(["user_count"]);
+
+  if (res.value === null) {
+    throw new GraphQLError("User count not found");
+  }
+
+  return Number(res.value);
+}
+
+export async function users({ kv }: ServerContext): Promise<UserModel[]> {
+  const iter = kv.list<UserModel>({ prefix: ["user"] });
+
+  return await amap(({ value }) => value, iter);
+}
 
 export async function createUser(
   { kv }: ServerContext,

@@ -1,16 +1,61 @@
 import { GraphQLError } from "../../../deps.ts";
-import type { UserContext } from "../../../types.ts";
+import type { ServerContext, UserContext } from "../../../types.ts";
+import { amap } from "../../../utils/mod.ts";
 import type {
   SetChoiceAnswerUpdateModel,
   SetTextAnswerUpdateModel,
 } from "../../graphql/update/mod.ts";
 import { assertChoiceAnswer, assertTextAnswer } from "../assert/mod.ts";
 import type {
+  AnswerModel,
   ChoiceAnswerModel,
   FieldModel,
   TextAnswerModel,
 } from "../model/mod.ts";
 import { FieldType } from "../model/mod.ts";
+
+export async function answer(
+  { kv }: ServerContext,
+  { fieldId, respondentId }: { fieldId: number; respondentId: number },
+): Promise<AnswerModel> {
+  const res = await kv.get<AnswerModel>([
+    "answer",
+    fieldId,
+    respondentId,
+  ]);
+
+  if (res.value === null) {
+    throw new GraphQLError(
+      `Answer to Field with ID ${fieldId} from User with ID ${respondentId} not found`,
+    );
+  }
+
+  return res.value;
+}
+
+export async function answerCount(
+  { kv }: ServerContext,
+  { fieldId }: { fieldId: number },
+): Promise<number> {
+  const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
+
+  if (res.value === null) {
+    throw new GraphQLError(
+      `Answer count to Field with ID ${fieldId} not found`,
+    );
+  }
+
+  return Number(res.value);
+}
+
+export async function answers(
+  { kv }: ServerContext,
+  { fieldId }: { fieldId: number },
+): Promise<AnswerModel[]> {
+  const iter = kv.list<AnswerModel>({ prefix: ["answer", fieldId] });
+
+  return await amap(({ value }) => value, iter);
+}
 
 export async function setTextAnswer(
   { user, kv }: UserContext,

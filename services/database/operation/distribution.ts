@@ -1,6 +1,7 @@
 import { GraphQLError } from "../../../deps.ts";
-import type { UserContext } from "../../../types.ts";
+import type { ServerContext, UserContext } from "../../../types.ts";
 import {
+  amap,
   difference,
   filter,
   getMany,
@@ -15,6 +16,44 @@ import type {
 import { assertDistribution, assertEditor } from "../assert/mod.ts";
 import type { DistributionModel, FieldModel } from "../model/mod.ts";
 import { DistributionState, Gender } from "../model/mod.ts";
+
+export async function distribution(
+  { kv }: ServerContext,
+  { distributionId }: { distributionId: number },
+): Promise<DistributionModel> {
+  const res = await kv.get<DistributionModel>([
+    "distribution",
+    distributionId,
+  ]);
+
+  if (res.value === null) {
+    throw new GraphQLError(
+      `Distribution with ID ${distributionId} not found`,
+    );
+  }
+
+  return res.value;
+}
+
+export async function distributionCount(
+  { kv }: ServerContext,
+): Promise<number> {
+  const res = await kv.get<Deno.KvU64>(["distribution_count"]);
+
+  if (res.value === null) {
+    throw new GraphQLError("Distribution count not found");
+  }
+
+  return Number(res.value);
+}
+
+export async function distributions(
+  { kv }: ServerContext,
+): Promise<DistributionModel[]> {
+  const iter = kv.list<DistributionModel>({ prefix: ["distribution"] });
+
+  return await amap(({ value }) => value, iter);
+}
 
 export async function createDistribution(
   { user, kv }: UserContext,

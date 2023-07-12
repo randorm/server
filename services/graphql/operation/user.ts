@@ -6,7 +6,6 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "../../../deps.ts";
-import { amap } from "../../../utils/mod.ts";
 import { recommend } from "../../algorithms/mod.ts";
 import { assertAuthenticated } from "../../database/assert/mod.ts";
 import type { ProfileModel, UserModel } from "../../database/model/mod.ts";
@@ -15,6 +14,9 @@ import {
   subscribe,
   unsubscribe,
   updateUserProfile,
+  user,
+  userCount,
+  users,
 } from "../../database/operation/mod.ts";
 import { DateScalar } from "../scalar/mod.ts";
 import { GenderEnum, UserNode } from "../type/mod.ts";
@@ -42,16 +44,10 @@ export const UserQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { userId }: { userId: number },
-        { kv },
+        args: { userId: number },
+        context,
       ): Promise<UserModel> {
-        const res = await kv.get<UserModel>(["user", userId]);
-
-        if (res.value === null) {
-          throw new GraphQLError(`User with ID ${userId} not found`);
-        }
-
-        return res.value;
+        return await user(context, args);
       },
     },
     me: {
@@ -64,14 +60,8 @@ export const UserQuery: Operation = new GraphQLObjectType({
     },
     userCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }): Promise<number> {
-        const res = await kv.get<Deno.KvU64>(["user_count"]);
-
-        if (res.value === null) {
-          throw new GraphQLError("User count not found");
-        }
-
-        return Number(res.value);
+      async resolve(_root, _args, context): Promise<number> {
+        return await userCount(context);
       },
     },
     users: {
@@ -80,10 +70,8 @@ export const UserQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve(_root, _args, { kv }): Promise<UserModel[]> {
-        const iter = kv.list<UserModel>({ prefix: ["user"] });
-
-        return await amap(({ value }) => value, iter);
+      async resolve(_root, _args, context): Promise<UserModel[]> {
+        return await users(context);
       },
     },
     recommend: {

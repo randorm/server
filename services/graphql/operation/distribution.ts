@@ -1,18 +1,19 @@
 import {
-  GraphQLError,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "../../../deps.ts";
-import { amap } from "../../../utils/mod.ts";
 import { assertAuthenticated } from "../../database/assert/mod.ts";
 import type { DistributionModel } from "../../database/model/mod.ts";
 import { DistributionState } from "../../database/model/mod.ts";
 import {
   createDistribution,
   deleteDistribution,
+  distribution,
+  distributionCount,
+  distributions,
   joinDistribution,
   leaveDistribution,
   updateDistributionFields,
@@ -46,33 +47,16 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { distributionId }: { distributionId: number },
-        { kv },
+        args: { distributionId: number },
+        context,
       ): Promise<DistributionModel> {
-        const res = await kv.get<DistributionModel>([
-          "distribution",
-          distributionId,
-        ]);
-
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Distribution with ID ${distributionId} not found`,
-          );
-        }
-
-        return res.value;
+        return await distribution(context, args);
       },
     },
     distributionCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }): Promise<number> {
-        const res = await kv.get<Deno.KvU64>(["distribution_count"]);
-
-        if (res.value === null) {
-          throw new GraphQLError("Distribution count not found");
-        }
-
-        return Number(res.value);
+      async resolve(_root, _args, context): Promise<number> {
+        return await distributionCount(context);
       },
     },
     distributions: {
@@ -81,10 +65,8 @@ export const DistributionQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(DistributionInterface),
         ),
       ),
-      async resolve(_root, _args, { kv }): Promise<DistributionModel[]> {
-        const iter = kv.list<DistributionModel>({ prefix: ["distribution"] });
-
-        return await amap(({ value }) => value, iter);
+      async resolve(_root, _args, context): Promise<DistributionModel[]> {
+        return await distributions(context);
       },
     },
   },

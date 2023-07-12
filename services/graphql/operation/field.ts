@@ -1,13 +1,11 @@
 import {
   GraphQLBoolean,
-  GraphQLError,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "../../../deps.ts";
-import { amap } from "../../../utils/mod.ts";
 import { assertAuthenticated } from "../../database/assert/mod.ts";
 import type {
   ChoiceFieldModel,
@@ -17,6 +15,9 @@ import type {
 import {
   createChoiceField,
   createTextField,
+  field,
+  fieldCount,
+  fields,
 } from "../../database/operation/mod.ts";
 import { ChoiceFieldNode, FieldInterface, TextFieldNode } from "../type/mod.ts";
 import type { Operation } from "../types.ts";
@@ -33,28 +34,16 @@ export const FieldQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { fieldId }: { fieldId: number },
-        { kv },
+        args: { fieldId: number },
+        context,
       ): Promise<FieldModel> {
-        const res = await kv.get<FieldModel>(["field", fieldId]);
-
-        if (res.value === null) {
-          throw new GraphQLError(`Field with ID ${fieldId} not found`);
-        }
-
-        return res.value;
+        return await field(context, args);
       },
     },
     fieldCount: {
       type: new GraphQLNonNull(GraphQLInt),
-      async resolve(_root, _args, { kv }): Promise<number> {
-        const res = await kv.get<Deno.KvU64>(["field_count"]);
-
-        if (res.value === null) {
-          throw new GraphQLError("Field count not found");
-        }
-
-        return Number(res.value);
+      async resolve(_root, _args, context): Promise<number> {
+        return await fieldCount(context);
       },
     },
     fields: {
@@ -63,10 +52,8 @@ export const FieldQuery: Operation = new GraphQLObjectType({
           new GraphQLNonNull(FieldInterface),
         ),
       ),
-      async resolve(_root, _args, { kv }): Promise<FieldModel[]> {
-        const iter = kv.list<FieldModel>({ prefix: ["field"] });
-
-        return await amap(({ value }) => value, iter);
+      async resolve(_root, _args, context): Promise<FieldModel[]> {
+        return await fields(context);
       },
     },
   },

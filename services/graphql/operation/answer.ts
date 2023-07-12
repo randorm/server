@@ -1,15 +1,16 @@
 import {
-  GraphQLError,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "../../../deps.ts";
-import { amap } from "../../../utils/mod.ts";
 import { assertAuthenticated } from "../../database/assert/mod.ts";
 import type { AnswerModel } from "../../database/model/mod.ts";
 import {
+  answer,
+  answerCount,
+  answers,
   setChoiceAnswer,
   setTextAnswer,
 } from "../../database/operation/mod.ts";
@@ -36,22 +37,10 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { fieldId, respondentId }: { fieldId: number; respondentId: number },
-        { kv },
+        args: { fieldId: number; respondentId: number },
+        context,
       ): Promise<AnswerModel> {
-        const res = await kv.get<AnswerModel>([
-          "answer",
-          fieldId,
-          respondentId,
-        ]);
-
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Answer to Field with ID ${fieldId} from User with ID ${respondentId} not found`,
-          );
-        }
-
-        return res.value;
+        return await answer(context, args);
       },
     },
     answerCount: {
@@ -63,18 +52,10 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { fieldId }: { fieldId: number },
-        { kv },
+        args: { fieldId: number },
+        context,
       ): Promise<number> {
-        const res = await kv.get<Deno.KvU64>(["field:answer_count", fieldId]);
-
-        if (res.value === null) {
-          throw new GraphQLError(
-            `Answer count to Field with ID ${fieldId} not found`,
-          );
-        }
-
-        return Number(res.value);
+        return await answerCount(context, args);
       },
     },
     answers: {
@@ -90,12 +71,10 @@ export const AnswerQuery: Operation = new GraphQLObjectType({
       },
       async resolve(
         _root,
-        { fieldId }: { fieldId: number },
-        { kv },
+        args: { fieldId: number },
+        context,
       ): Promise<AnswerModel[]> {
-        const iter = kv.list<AnswerModel>({ prefix: ["answer", fieldId] });
-
-        return await amap(({ value }) => value, iter);
+        return await answers(context, args);
       },
     },
   },
