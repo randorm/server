@@ -5,6 +5,8 @@ import {
   mapValues,
   Router,
   Status,
+  validateWebAppData,
+  z,
 } from "../deps.ts";
 import type { UserModel } from "../services/database/model/mod.ts";
 import type { ServerContext } from "../types.ts";
@@ -19,44 +21,96 @@ export const router = new Router<ServerContext>();
 router.post("/authenticate", async (ctx) => {
   const body = ctx.request.body();
 
-  if (body.type !== "json") {
-    ctx.response.status = Status.BadRequest;
-    ctx.response.type = "text/plain";
-    ctx.response.body = "Request body must be JSON";
+  let authenticationData: z.infer<typeof AuthenticationData>;
+  switch (body.type) {
+    case "json": {
+      const bodyValue = await body.value;
 
-    return;
-  }
+      const validationResult = AuthenticationData.safeParse(bodyValue);
 
-  const bodyValue = await body.value;
+      if (!validationResult.success) {
+        ctx.response.status = Status.BadRequest;
+        ctx.response.type = "text/plain";
+        ctx.response.body = validationResult.error.message;
 
-  const validationResult = AuthenticationData.safeParse(bodyValue);
+        return;
+      }
 
-  if (!validationResult.success) {
-    ctx.response.status = Status.BadRequest;
-    ctx.response.type = "text/plain";
-    ctx.response.body = validationResult.error.message;
+      const signatureResult = checkSignature(
+        ctx.state.botToken,
+        mapValues(
+          validationResult.data,
+          (value) => typeof value === "string" ? value : String(value),
+        ),
+      );
 
-    return;
-  }
+      if (!signatureResult) {
+        ctx.response.status = Status.Unauthorized;
+        ctx.response.type = "text/plain";
+        ctx.response.body = "Invalid signature";
 
-  const signatureResult = checkSignature(
-    ctx.state.botToken,
-    mapValues(
-      validationResult.data,
-      (value) => typeof value === "string" ? value : String(value),
-    ),
-  );
+        return;
+      }
 
-  if (!signatureResult) {
-    ctx.response.status = Status.Unauthorized;
-    ctx.response.type = "text/plain";
-    ctx.response.body = "Invalid signature";
+      authenticationData = validationResult.data;
 
-    return;
+      break;
+    }
+    case "text": {
+      const bodyValue = await body.value;
+
+      const searchParams = new URLSearchParams(bodyValue);
+
+      const signatureResult = validateWebAppData(
+        ctx.state.botToken,
+        searchParams,
+      );
+
+      if (!signatureResult) {
+        ctx.response.status = Status.Unauthorized;
+        ctx.response.type = "text/plain";
+        ctx.response.body = "Invalid signature";
+
+        return;
+      }
+
+      const serializedUser = searchParams.get("user");
+
+      if (!serializedUser) {
+        ctx.response.status = Status.BadRequest;
+        ctx.response.type = "text/plain";
+        ctx.response.body = "Invalid request body";
+
+        return;
+      }
+
+      const validationResult = AuthenticationData.safeParse(
+        JSON.parse(serializedUser),
+      );
+
+      if (!validationResult.success) {
+        ctx.response.status = Status.BadRequest;
+        ctx.response.type = "text/plain";
+        ctx.response.body = validationResult.error.message;
+
+        return;
+      }
+
+      authenticationData = validationResult.data;
+
+      break;
+    }
+    default: {
+      ctx.response.status = Status.BadRequest;
+      ctx.response.type = "text/plain";
+      ctx.response.body = "Invalid request body type";
+
+      return;
+    }
   }
 
   const { milliseconds } = difference(
-    new Date(validationResult.data.auth_date * 1000),
+    new Date(authenticationData.auth_date * 1000),
     new Date(),
     { units: ["milliseconds"] },
   );
@@ -71,7 +125,7 @@ router.post("/authenticate", async (ctx) => {
 
   const userByTelegramIdRes = await ctx.state.kv.get<number>([
     "user_by_telegram_id",
-    validationResult.data.id,
+    authenticationData.id,
   ]);
 
   if (userByTelegramIdRes.value === null) {
