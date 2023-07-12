@@ -5,6 +5,7 @@ export type StateFlavor = {
   state: ServerContext;
 };
 
+// TODO(Azaki-san): add SessionFlavor
 export type BotContext = Context & StateFlavor;
 
 export interface ServerContext {
