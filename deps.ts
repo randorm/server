@@ -8,6 +8,10 @@ export { parse } from "https://deno.land/std@0.193.0/datetime/parse.ts";
 export { oakCors } from "https://deno.land/x/cors@v1.2.2/mod.ts";
 export { create, verify } from "https://deno.land/x/djwt@v2.9/mod.ts";
 export { Bot, Composer } from "https://deno.land/x/grammy@v1.17.1/mod.ts";
+export type {
+  Context,
+  MiddlewareFn,
+} from "https://deno.land/x/grammy@v1.17.1/mod.ts";
 export {
   checkSignature,
   validateWebAppData,

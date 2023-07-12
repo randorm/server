@@ -1,6 +1,7 @@
+import type { MiddlewareFn } from "./deps.ts";
 import { Application, Bot, oakCors } from "./deps.ts";
 import { router } from "./routes/mod.ts";
-import type { ServerContext } from "./types.ts";
+import type { BotContext, ServerContext } from "./types.ts";
 import {
   PORT,
   setupKeys,
@@ -28,11 +29,16 @@ if (!BOT_TOKEN) {
 
 // Step 2.2. Create a Telegram Bot instance.
 
-const bot = new Bot(BOT_TOKEN);
+const bot = new Bot<BotContext>(BOT_TOKEN);
 
 // // Step 2.3. Register bot middlewares.
 
-// bot.use(handlers);
+// TODO(Azaki-san): bot.use(handlers);
+// TODO(Azaki-san): bot.use(sessions)
+
+// Step 2.4. Setup the webhook.
+
+// TODO(Azaki-san): setup the webhook.
 
 ////////////////////////////////////////////////////////////////
 
@@ -56,26 +62,46 @@ const jwk = await crypto.subtle.importKey(
 
 ////////////////////////////////////////////////////////////////
 
-// Step 4.1. Create an Application instance.
+// Step 4.1. Create a ServerContext object.
 
-const app = new Application<ServerContext>({
-  state: {
-    kv,
-    botToken: BOT_TOKEN,
-    bot,
-    jwk,
-  },
-});
+const state: ServerContext = {
+  kv,
+  botToken: BOT_TOKEN,
+  bot,
+  jwk,
+};
 
-// Step 4.2.1. Register the router.
+////////////////////////////////////////////////////////////////
+
+// Step 5.1. Create a statePlugin function.
+
+export function statePlugin(state: ServerContext): MiddlewareFn<BotContext> {
+  return (ctx, next) => {
+    ctx.state = state;
+
+    return next();
+  };
+}
+
+// Step 5.3. Register the statePlugin function.
+
+bot.use(statePlugin(state));
+
+////////////////////////////////////////////////////////////////
+
+// Step 6.1. Create an Application instance.
+
+const app = new Application<ServerContext>({ state });
+
+// Step 6.2.1. Register the router.
 
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// Step 4.2.2. Register CORS middleware.
+// Step 6.2.2. Register CORS middleware.
 
 app.use(oakCors());
 
-// Step 4.3. Start the server.
+// Step 6.3. Start the server.
 
 await app.listen({ port: PORT });
