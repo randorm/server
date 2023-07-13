@@ -2,6 +2,7 @@ import type { MiddlewareFn } from "./deps.ts";
 import { Application, Bot, oakCors } from "./deps.ts";
 import { router } from "./routes/mod.ts";
 import type { BotContext, ServerContext } from "./types.ts";
+import { composer } from "./services/bot/bot.ts";
 import {
   PORT,
   setupKeys,
@@ -29,11 +30,11 @@ if (!BOT_TOKEN) {
 
 // Step 2.2. Create a Telegram Bot instance.
 
-export const bot = new Bot<BotContext>("1786952895:AAHY7ZdGvly2ygQT3EQIFztPyen4c-EcwiY");
+const bot = new Bot<BotContext>(BOT_TOKEN);
 
 // // Step 2.3. Register bot middlewares.
 
-// TODO(Azaki-san): bot.use(handlers);
+bot.use(composer);
 // TODO(Azaki-san): bot.use(sessions)
 
 // Step 2.4. Setup the webhook.
@@ -64,7 +65,7 @@ const jwk = await crypto.subtle.importKey(
 
 // Step 4.1. Create a ServerContext object.
 
-export const state: ServerContext = {
+const state: ServerContext = {
   kv,
   botToken: BOT_TOKEN,
   bot,
