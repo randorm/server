@@ -1,22 +1,21 @@
 import { Composer, session } from "../../deps.ts";
-import type { BotContext } from "../../types.ts";
-import {
-  EditingStep,
-  MyContext,
-  RegistrationStep,
-  SessionData,
-} from "./types.ts";
-import { isValidDate } from "./plugins/validDateTempFunc.ts";
-import { createUser, updateUserProfile } from "../database/operation/user.ts";
-import { genderValidation } from "./plugins/genderValidation.ts";
-import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import { ProfileModel } from "../../services/database/model/user.ts";
+import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
+import type { BotContext } from "../../types.ts";
+import { createUser } from "../database/operation/user.ts";
+import { genderValidation } from "./plugins/genderValidation.ts";
+import { isValidDate } from "./plugins/validDateTempFunc.ts";
+import { EditingStep, RegistrationStep, SessionData } from "./types.ts";
 
 export const composer = new Composer<BotContext>();
 
-composer.use(session<SessionData, MyContext>({ initial: () => ({}) }));
+const sessionMiddleware = session<SessionData, BotContext>({
+  initial: () => ({}),
+});
 
-composer.command("start", async (ctx: MyContext) => {
+composer.use(sessionMiddleware);
+
+composer.command("start", async (ctx: BotContext) => {
   if (ctx.session.registrationStep !== RegistrationStep.Next) {
     const newMessage = await ctx.reply(
       "*Welcome to the _Randorm_\\ \\- the place where you will find your best roommates\\.\nLet's register you in the bot \\=\\)*",
@@ -32,7 +31,7 @@ composer.command("start", async (ctx: MyContext) => {
   }
 });
 
-composer.command("profile", async (ctx: MyContext) => {
+composer.command("profile", async (ctx: BotContext) => {
   const userData = getUserData(ctx);
   const keyboard = [
     [{ text: "Edit Info", callback_data: "edit" }],
@@ -47,7 +46,7 @@ composer.command("profile", async (ctx: MyContext) => {
   ctx.session.lastBotMessageId = newMessage.message_id;
 });
 
-async function askName(ctx: MyContext) {
+async function askName(ctx: BotContext) {
   const newMessage = await ctx.reply(
     "Enter your name and surname like _Name Surname_",
     {
@@ -63,7 +62,7 @@ async function askName(ctx: MyContext) {
   ctx.session.registrationStep = RegistrationStep.Name;
 }
 
-async function askGender(ctx: MyContext) {
+async function askGender(ctx: BotContext) {
   const newMessage = await ctx.reply("Please, select your gender.", {
     reply_markup: {
       inline_keyboard: [
@@ -79,7 +78,7 @@ async function askGender(ctx: MyContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
-async function askBirthday(ctx: MyContext) {
+async function askBirthday(ctx: BotContext) {
   const newMessage = await ctx.reply(
     "Enter your date of birthday (YYYY-MM-DD).",
     {
@@ -96,7 +95,7 @@ async function askBirthday(ctx: MyContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
-async function askBio(ctx: MyContext) {
+async function askBio(ctx: BotContext) {
   const newMessage = await ctx.reply("Enter your bio (a few sentences).", {
     reply_markup: {
       inline_keyboard: [
@@ -110,7 +109,7 @@ async function askBio(ctx: MyContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
-function getUserData(ctx: MyContext): string {
+function getUserData(ctx: BotContext): string {
   const s = `Name: ${ctx.session.userData?.name}
 Surname: ${ctx.session.userData?.surname}
 Gender: ${ctx.session.userData?.gender}
@@ -120,7 +119,7 @@ Bio: ${ctx.session.userData?.bio}\n
   return s;
 }
 
-async function editingConfirmation(ctx: MyContext) {
+async function editingConfirmation(ctx: BotContext) {
   const keyboard = [
     [{ text: "Edit Info", callback_data: "edit" }],
   ];
@@ -140,7 +139,7 @@ async function editingConfirmation(ctx: MyContext) {
   }
 }
 
-async function editingBack(ctx: MyContext) {
+async function editingBack(ctx: BotContext) {
   if (ctx.session.lastBotMessageId && ctx.chat?.id) {
     await ctx.state.bot.api.deleteMessage(
       ctx.chat.id,
@@ -163,7 +162,7 @@ async function editingBack(ctx: MyContext) {
   ctx.session.lastBotMessageId = message.message_id;
 }
 
-composer.on("message", async (ctx: MyContext) => {
+composer.on("message", async (ctx: BotContext) => {
   const step = ctx.session?.registrationStep;
   if (step == RegistrationStep.Editing) {
     {
@@ -275,7 +274,7 @@ composer.on("message", async (ctx: MyContext) => {
   }
 });
 
-composer.on("callback_query:data", async (ctx: MyContext) => {
+composer.on("callback_query:data", async (ctx: BotContext) => {
   const data = ctx.callbackQuery?.data;
   const step = ctx.session?.registrationStep;
   const step2 = ctx.session?.editingStep;
@@ -402,12 +401,16 @@ composer.on("callback_query:data", async (ctx: MyContext) => {
       ),
       bio: ctx.session.userData.bio,
     };
-    //  THERE ARE CTX.CHAT.USERNAME!!!
-    createUser(ctx.state, {
-      telegramId: ctx.chat.id,
-      username: ctx.user.username,
-      profile: model,
-    });
+
+    if (ctx.from?.username) {
+      createUser(ctx.state, {
+        telegramId: ctx.from.id,
+        username: ctx.from.username,
+        profile: model,
+      });
+    } else {
+      // TODO(Azaki-san): ask for a permission
+    }
   } else if (data === "edit") {
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
 

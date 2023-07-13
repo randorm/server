@@ -1,8 +1,8 @@
 import type { MiddlewareFn } from "./deps.ts";
-import { Application, Bot, oakCors } from "./deps.ts";
+import { Application, Bot, oakCors, webhookCallback } from "./deps.ts";
 import { router } from "./routes/mod.ts";
+import { composer } from "./services/bot/mod.ts";
 import type { BotContext, ServerContext } from "./types.ts";
-import { composer } from "./services/bot/bot.ts";
 import {
   PORT,
   setupKeys,
@@ -35,11 +35,10 @@ const bot = new Bot<BotContext>(BOT_TOKEN);
 // // Step 2.3. Register bot middlewares.
 
 bot.use(composer);
-// TODO(Azaki-san): bot.use(sessions)
 
-// Step 2.4. Setup the webhook.
+// Step 2.4. Create a webhook callback.
 
-// TODO(Azaki-san): setup the webhook.
+const webhook = webhookCallback(bot, "oak");
 
 ////////////////////////////////////////////////////////////////
 
@@ -70,6 +69,7 @@ const state: ServerContext = {
   botToken: BOT_TOKEN,
   bot,
   jwk,
+  webhook,
 };
 
 ////////////////////////////////////////////////////////////////
@@ -103,6 +103,26 @@ app.use(router.allowedMethods());
 
 app.use(oakCors());
 
-// Step 6.3. Start the server.
+////////////////////////////////////////////////////////////////
 
-await app.listen({ port: PORT });
+// Step 7.1. Get the origin.
+
+const ORIGIN = Deno.env.get("ORIGIN");
+
+if (!ORIGIN) {
+  throw new Error("Missing `ORIGIN` environment variable");
+}
+
+// Step 7.2. Create a webhook URL.
+
+const WEBHOOK_URL = new URL(ORIGIN);
+
+WEBHOOK_URL.pathname = "/bot";
+
+// Step 7.2. Start the server.
+
+await Promise.all([
+  app.listen({ port: PORT }),
+  bot.api.setWebhook(WEBHOOK_URL.toString()),
+  // or bot.start(),
+]);
