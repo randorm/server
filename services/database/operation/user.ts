@@ -39,6 +39,18 @@ export async function users({ kv }: ServerContext): Promise<UserModel[]> {
   return await amap(({ value }) => value, iter);
 }
 
+export async function userDistributionsIds({ user, kv }: UserContext): Promise<Set<number>> {
+  const res = await kv.get<Set<number>>(["user:distribution_ids", user.id]);
+
+  if (res.value === null) {
+    throw new GraphQLError(
+      `Distribution IDs of User with ID ${user.id} not found`,
+    );
+  }
+
+  return res.value;
+}
+
 export async function createUser(
   { kv }: ServerContext,
   { telegramId, username, profile }: {
