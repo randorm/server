@@ -55,6 +55,24 @@ export async function distributions(
   return await amap(({ value }) => value, iter);
 }
 
+export async function distributionFieldIds(
+  { kv }: ServerContext,
+  { distributionId }: { distributionId: number },
+): Promise<Set<number>> {
+  const res = await kv.get<Set<number>>([
+    "distribution:field_ids",
+    distributionId,
+  ]);
+
+  if (res.value === null) {
+    throw new GraphQLError(
+      `Distribution with ID ${distributionId} not found`,
+    );
+  }
+
+  return res.value;
+}
+
 export async function createDistribution(
   { user, kv }: UserContext,
   { name }: { name: string },
