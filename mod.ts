@@ -103,22 +103,6 @@ app.use(router.allowedMethods());
 
 app.use(oakCors());
 
-////////////////////////////////////////////////////////////////
-
-// Step 7.1. Get the origin.
-
-const ORIGIN = Deno.env.get("ORIGIN");
-
-if (!ORIGIN) {
-  throw new Error("Missing `ORIGIN` environment variable");
-}
-
-// Step 7.2. Create a webhook URL.
-
-const WEBHOOK_URL = new URL(ORIGIN);
-
-WEBHOOK_URL.pathname = "/bot";
-
-// Step 7.2. Start the server.
+// Step 6.3. Start the server.
 
 await app.listen({ port: PORT });
