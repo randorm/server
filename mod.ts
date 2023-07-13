@@ -29,7 +29,7 @@ if (!BOT_TOKEN) {
 
 // Step 2.2. Create a Telegram Bot instance.
 
-const bot = new Bot<BotContext>(BOT_TOKEN);
+export const bot = new Bot<BotContext>("1786952895:AAHY7ZdGvly2ygQT3EQIFztPyen4c-EcwiY");
 
 // // Step 2.3. Register bot middlewares.
 
@@ -64,7 +64,7 @@ const jwk = await crypto.subtle.importKey(
 
 // Step 4.1. Create a ServerContext object.
 
-const state: ServerContext = {
+export const state: ServerContext = {
   kv,
   botToken: BOT_TOKEN,
   bot,
