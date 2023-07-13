@@ -121,8 +121,4 @@ WEBHOOK_URL.pathname = "/bot";
 
 // Step 7.2. Start the server.
 
-await Promise.all([
-  app.listen({ port: PORT }),
-  bot.api.setWebhook(WEBHOOK_URL.toString()),
-  // or bot.start(),
-]);
+await app.listen({ port: PORT });
