@@ -37,41 +37,23 @@ router.post("/graphql", async (ctx) => {
   ctx.response.status = Status.OK;
   ctx.response.type = "json";
 
-  // try {
-  //   const { query, variables, operationName } = validationResult.data;
+  try {
+    const { query, variables, operationName } = validationResult.data;
 
-  //   const authorization = ctx.request.headers.get("Authorization");
+    const authorization = ctx.request.headers.get("Authorization");
 
-  //   const executionResult = await graphql({
-  //     schema,
-  //     source: query,
-  //     contextValue: authorization
-  //       ? await authenticate(authorization, ctx.state)
-  //       : ctx.state,
-  //     variableValues: variables,
-  //     operationName,
-  //   });
+    const executionResult = await graphql({
+      schema,
+      source: query,
+      contextValue: authorization
+        ? await authenticate(authorization, ctx.state)
+        : ctx.state,
+      variableValues: variables,
+      operationName,
+    });
 
-  //   ctx.response.body = executionResult;
-  // } catch (error) {
-  //   ctx.response.body = { errors: [error], data: null };
-  // }
-
-  const { query, variables, operationName } = validationResult.data;
-
-  const authorization = ctx.request.headers.get("Authorization");
-
-  console.log(ctx.state);
-
-  const executionResult = await graphql({
-    schema,
-    source: query,
-    contextValue: authorization
-      ? await authenticate(authorization, ctx.state)
-      : ctx.state,
-    variableValues: variables,
-    operationName,
-  });
-
-  ctx.response.body = executionResult;
+    ctx.response.body = executionResult;
+  } catch (error) {
+    ctx.response.body = { errors: [error], data: null };
+  }
 });

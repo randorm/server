@@ -1,4 +1,3 @@
-import type { MiddlewareFn } from "./deps.ts";
 import { Application, Bot, oakCors, webhookCallback } from "./deps.ts";
 import { router } from "./routes/mod.ts";
 import { composer } from "./services/bot/mod.ts";
