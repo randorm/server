@@ -50,6 +50,7 @@ export async function distributionCount(
 export async function distributions(
   { kv }: ServerContext,
 ): Promise<DistributionModel[]> {
+  console.log("distributions", kv);
   const iter = kv.list<DistributionModel>({ prefix: ["distribution"] });
 
   return await amap(({ value }) => value, iter);
