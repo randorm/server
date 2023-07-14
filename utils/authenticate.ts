@@ -18,7 +18,12 @@ export async function authenticate(
     throw new Error("Header `Authorization` is invalid");
   }
 
-  const payload = await verify(token, context.jwk);
+  let payload;
+  try {
+    payload = await verify(token, context.jwk);
+  } catch {
+    throw new Error("Header `Authorization` is invalid");
+  }
 
   const userRes = await context.kv.get<UserModel>([
     "user",
