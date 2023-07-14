@@ -61,6 +61,8 @@ router.post("/graphql", async (ctx) => {
 
   const authorization = ctx.request.headers.get("Authorization");
 
+  console.log(ctx.state);
+
   const executionResult = await graphql({
     schema,
     source: query,
