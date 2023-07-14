@@ -72,6 +72,8 @@ const state: ServerContext = {
   webhook,
 };
 
+console.log(state);
+
 ////////////////////////////////////////////////////////////////
 
 // Step 5.1. Create a statePlugin function.
@@ -104,5 +106,7 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 
 // Step 6.3. Start the server.
+
+console.log(state);
 
 await app.listen({ port: PORT });
