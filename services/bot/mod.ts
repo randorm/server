@@ -1,2 +1,11 @@
 export { composer } from "./bot.ts";
 export type { SessionData } from "./types.ts";
+export * from "../database/model/user.ts";
+export type { UserContext, ServerContext } from "../../types.ts";
+export { createUserContext } from "./tools/authentificate.ts";
+export { createUser, updateUserProfile, userFieldIds } from "../database/operation/user.ts";
+export { fields, field } from "../database/operation/field.ts";
+export { setTextAnswer } from "../database/operation/answer.ts";
+export * from "../database/model/field.ts";
+export { difference } from "../../utils/iter.ts";
+export { isValidDate } from "./tools/validDateTemp.ts";

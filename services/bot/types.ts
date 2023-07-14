@@ -1,9 +1,17 @@
+import { UserModel, Gender, FieldType } from "./mod.ts";
+
 export interface SessionData {
   registrationStep?: RegistrationStep;
   editingStep?: EditingStep;
   userData?: RegistrationPayload;
   previousStep?: RegistrationStep;
   lastBotMessageId?: number;
+  userModel?: UserModel;
+  fieldStep?: FieldStep;
+  fieldAmount?: number;
+  fieldCurrentIndex?: number;
+  fieldsIds?: number[];
+  fieldType?: FieldType;
 }
 
 export enum RegistrationStep {
@@ -11,8 +19,13 @@ export enum RegistrationStep {
   Gender,
   Birthday,
   Bio,
-  Next,
+  Finish,
   Editing,
+}
+
+export enum FieldStep {
+  PROCESS,
+  FINISH,
 }
 
 export enum EditingStep {
@@ -26,7 +39,7 @@ export enum EditingStep {
 export interface RegistrationPayload {
   name?: string;
   surname?: string;
-  gender?: string;
+  gender?: Gender;
   birthday?: string;
   bio?: string;
 }
