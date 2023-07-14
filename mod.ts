@@ -72,14 +72,13 @@ const state: ServerContext = {
   webhook,
 };
 
-console.log(state);
-
 ////////////////////////////////////////////////////////////////
 
 // Step 5.1. Create a statePlugin function.
 
-export function statePlugin(state: ServerContext): MiddlewareFn<BotContext> {
-  return (ctx, next) => {
+export function statePlugin(state: ServerContext) {
+  // deno-lint-ignore no-explicit-any
+  return (ctx: { state: ServerContext; }, next: () => any) => {
     ctx.state = state;
 
     return next();
@@ -94,7 +93,11 @@ bot.use(statePlugin(state));
 
 // Step 6.1. Create an Application instance.
 
-const app = new Application<ServerContext>({ state });
+const app = new Application<ServerContext>();
+
+// Step 6.2.1. Register the statePlugin function.
+
+app.use(statePlugin(state));
 
 // Step 6.2.1. Register CORS middleware.
 
@@ -106,7 +109,5 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 
 // Step 6.3. Start the server.
-
-console.log(state);
 
 await app.listen({ port: PORT });
