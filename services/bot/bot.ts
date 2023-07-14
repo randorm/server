@@ -1,9 +1,32 @@
 import { Composer, session } from "../../deps.ts";
-import { ProfileModel, UserModel, Gender, createUserContext, UserContext, isValidDate, createUser, updateUserProfile, userFieldIds, fields, field, difference, setTextAnswer,
-  FieldModel, FieldType, makeInlineKeyboard, setChoiceAnswer, userDistributionsIds } from "./mod.ts";
+import {
+  createUser,
+  createUserContext,
+  difference,
+  field,
+  FieldModel,
+  fields,
+  FieldType,
+  Gender,
+  isValidDate,
+  makeInlineKeyboard,
+  ProfileModel,
+  setChoiceAnswer,
+  setTextAnswer,
+  updateUserProfile,
+  UserContext,
+  userDistributionsIds,
+  userFieldIds,
+  UserModel,
+} from "./mod.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
-import { EditingStep, RegistrationStep, SessionData, FieldStep } from "./types.ts";
+import {
+  EditingStep,
+  FieldStep,
+  RegistrationStep,
+  SessionData,
+} from "./types.ts";
 
 export const composer = new Composer<BotContext>();
 
@@ -18,8 +41,9 @@ composer.use(sessionMiddleware);
 
 composer.command("start", async (ctx: BotContext) => {
   if (!ctx.from?.username) {
-    await ctx.reply("*Hey hey\\! Before starting using the bot, please add your alias \\(username\\) in the telegram profile settings\\.*",
-    { parse_mode: "MarkdownV2" },
+    await ctx.reply(
+      "*Hey hey\\! Before starting using the bot, please add your alias \\(username\\) in the telegram profile settings\\.*",
+      { parse_mode: "MarkdownV2" },
     );
   } else if (ctx.session.registrationStep !== RegistrationStep.Finish) {
     const newMessage = await ctx.reply(
@@ -37,7 +61,10 @@ composer.command("start", async (ctx: BotContext) => {
 });
 
 composer.command("profile", async (ctx: BotContext) => {
-  if (ctx.session.registrationStep === RegistrationStep.Finish && ctx.session.fieldStep == FieldStep.FINISH) {
+  if (
+    ctx.session.registrationStep === RegistrationStep.Finish &&
+    ctx.session.fieldStep == FieldStep.FINISH
+  ) {
     const userData = getUserData(ctx);
     const keyboard = [
       [{ text: "Edit Info", callback_data: "edit" }],
@@ -50,10 +77,12 @@ composer.command("profile", async (ctx: BotContext) => {
     });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
-} else {
-  await ctx.reply("*Wow, wow, wow\\. Slow down\\! At first, you need to register\\. Use /start :\\)*",
-  {parse_mode: "MarkdownV2"});
-}
+  } else {
+    await ctx.reply(
+      "*Wow, wow, wow\\. Slow down\\! At first, you need to register\\. Use /start :\\)*",
+      { parse_mode: "MarkdownV2" },
+    );
+  }
 });
 
 async function askFirstName(ctx: BotContext) {
@@ -139,23 +168,29 @@ async function askBio(ctx: BotContext) {
 }
 
 async function askField(ctx: BotContext) {
-  if (ctx.session.fieldsIds !== undefined && ctx.session.fieldCurrentIndex !== undefined) {
-    const currentFieldId: number = ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
-    const currentField: FieldModel = field(ctx.state, { fieldId: currentFieldId }) as unknown as FieldModel;
+  if (
+    ctx.session.fieldsIds !== undefined &&
+    ctx.session.fieldCurrentIndex !== undefined
+  ) {
+    const currentFieldId: number =
+      ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+    const currentField: FieldModel = field(ctx.state, {
+      fieldId: currentFieldId,
+    }) as unknown as FieldModel;
     ctx.session.currentField = currentField;
     if (currentField.type === FieldType.TEXT) {
       const newMessage = await ctx.reply(currentField.question);
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldType = FieldType.TEXT;
       ctx.session.lastBotMessageId = newMessage.message_id;
-    }  else if (currentField.type === FieldType.CHOICE) {
-       const options: readonly string[] = currentField.options;
-       const newMessage = await ctx.reply(currentField.question, {
-         reply_markup: {
-           inline_keyboard: makeInlineKeyboard(options),
-         },
+    } else if (currentField.type === FieldType.CHOICE) {
+      const options: readonly string[] = currentField.options;
+      const newMessage = await ctx.reply(currentField.question, {
+        reply_markup: {
+          inline_keyboard: makeInlineKeyboard(options),
+        },
       });
-       ctx.session.lastBotMessageId = newMessage.message_id;
+      ctx.session.lastBotMessageId = newMessage.message_id;
     }
   }
 }
@@ -198,41 +233,45 @@ async function editingBack(ctx: BotContext) {
     );
   }
   if (ctx.session.userModel) {
-  const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
-  const distributionIds: Set<number> = userDistributionsIds(userContext) as unknown as Set<number>;
-  if (distributionIds.size > 1) {
-    const message = await ctx.reply("What information do you want to edit?", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "First Name", callback_data: "edit_FirstName" }],
-          [{ text: "Second Name", callback_data: "edit_SecondName" }], 
-          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
-          [{ text: "Bio", callback_data: "edit_bio" }],
-          [{ text: "Back", callback_data: "cancel_back" }],
-        ],
-      },
-    });
-    ctx.session.lastBotMessageId = message.message_id;
-  } else {
-    const message = await ctx.reply("What information do you want to edit?", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "First Name", callback_data: "edit_FirstName" }],
-          [{ text: "Second Name", callback_data: "edit_SecondName" }],
-          [{ text: "Gender", callback_data: "edit_gender" }],
-          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
-          [{ text: "Bio", callback_data: "edit_bio" }],
-          [{ text: "Back", callback_data: "cancel_back" }],
-        ],
-      },
-    });
-    ctx.session.lastBotMessageId = message.message_id;
+    const userContext: UserContext = createUserContext(
+      ctx.state,
+      ctx.session.userModel.id,
+    ) as unknown as UserContext;
+    const distributionIds: Set<number> = userDistributionsIds(
+      userContext,
+    ) as unknown as Set<number>;
+    if (distributionIds.size > 1) {
+      const message = await ctx.reply("What information do you want to edit?", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "First Name", callback_data: "edit_FirstName" }],
+            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+            [{ text: "Bio", callback_data: "edit_bio" }],
+            [{ text: "Back", callback_data: "cancel_back" }],
+          ],
+        },
+      });
+      ctx.session.lastBotMessageId = message.message_id;
+    } else {
+      const message = await ctx.reply("What information do you want to edit?", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "First Name", callback_data: "edit_FirstName" }],
+            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Gender", callback_data: "edit_gender" }],
+            [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+            [{ text: "Bio", callback_data: "edit_bio" }],
+            [{ text: "Back", callback_data: "cancel_back" }],
+          ],
+        },
+      });
+      ctx.session.lastBotMessageId = message.message_id;
+    }
+
+    ctx.session.editingStep = EditingStep.Done;
+    ctx.session.registrationStep = RegistrationStep.Finish;
   }
-
-  ctx.session.editingStep = EditingStep.Done;
-  ctx.session.registrationStep = RegistrationStep.Finish;
-
-}
 }
 
 composer.on("message", async (ctx: BotContext) => {
@@ -240,7 +279,9 @@ composer.on("message", async (ctx: BotContext) => {
   if (step == RegistrationStep.Editing) {
     {
       const step2 = ctx.session.editingStep;
-      if (step2 == EditingStep.FirstNameEdition && ctx.session.lastBotMessageId) {
+      if (
+        step2 == EditingStep.FirstNameEdition && ctx.session.lastBotMessageId
+      ) {
         const name = ctx.message?.text;
         if (ctx.session.userData) {
           ctx.session.userData.name = name;
@@ -253,7 +294,9 @@ composer.on("message", async (ctx: BotContext) => {
           ctx.reply("Incorrect format. Try again (Name)");
         }
       }
-      if (step2 == EditingStep.SecondNameEdition && ctx.session.lastBotMessageId) {
+      if (
+        step2 == EditingStep.SecondNameEdition && ctx.session.lastBotMessageId
+      ) {
         const name = ctx.message?.text;
         if (ctx.session.userData) {
           ctx.session.userData.surname = name;
@@ -265,8 +308,7 @@ composer.on("message", async (ctx: BotContext) => {
         } else {
           ctx.reply("Incorrect format. Try again (Surname)");
         }
-      }
-      else if (step2 == EditingStep.BirthdayEdition) {
+      } else if (step2 == EditingStep.BirthdayEdition) {
         const birthday = ctx.message?.text ? ctx.message?.text : "";
         if (isValidDate(birthday) && ctx.session.userData) {
           ctx.session.userData.birthday = birthday;
@@ -290,15 +332,26 @@ composer.on("message", async (ctx: BotContext) => {
         ctx.session.registrationStep = RegistrationStep.Finish;
       }
       if (ctx.session.editingStep === EditingStep.Done) {
-        if (ctx.session.userModel?.id && ctx.session.userData?.name && ctx.session.userData?.surname && ctx.session.userData?.gender && ctx.session?.userData.birthday && ctx.session?.userData.bio) {
+        if (
+          ctx.session.userModel?.id && ctx.session.userData?.name &&
+          ctx.session.userData?.surname && ctx.session.userData?.gender &&
+          ctx.session?.userData.birthday && ctx.session?.userData.bio
+        ) {
           const userId = ctx.session.userModel.id;
           const userContextTemp = createUserContext(ctx.state, userId);
-          if (typeof userContextTemp === 'object' && userContextTemp !== null) {
-            const userContext: UserContext = userContextTemp as unknown as UserContext;
-            const model: ProfileModel = {firstName: ctx.session.userData.name, lastName: ctx.session.userData.surname,
-              gender: ctx.session.userData.gender, birthday: DateTimeScalar.parseValue(ctx.session.userData.birthday + " 00:00:00"),
-             bio: ctx.session.userData.bio};
-            updateUserProfile(userContext, model)
+          if (typeof userContextTemp === "object" && userContextTemp !== null) {
+            const userContext: UserContext =
+              userContextTemp as unknown as UserContext;
+            const model: ProfileModel = {
+              firstName: ctx.session.userData.name,
+              lastName: ctx.session.userData.surname,
+              gender: ctx.session.userData.gender,
+              birthday: DateTimeScalar.parseValue(
+                ctx.session.userData.birthday + " 00:00:00",
+              ),
+              bio: ctx.session.userData.bio,
+            };
+            updateUserProfile(userContext, model);
           } else {
             // TODO(Junkyyz): Write error.
           }
@@ -323,7 +376,7 @@ composer.on("message", async (ctx: BotContext) => {
         },
       });
     }
-  }else if (step == RegistrationStep.SecondName) {
+  } else if (step == RegistrationStep.SecondName) {
     console.log(ctx.session.userData);
     const nameSurname = ctx.message?.text?.split(" ");
     if (nameSurname?.length == 1 && ctx.session.userData) {
@@ -338,8 +391,7 @@ composer.on("message", async (ctx: BotContext) => {
         },
       });
     }
-  }
-   else if (step == RegistrationStep.Gender) {
+  } else if (step == RegistrationStep.Gender) {
     const newMessage = await ctx.reply("Click on the inline button :)");
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (step == RegistrationStep.Birthday) {
@@ -379,18 +431,27 @@ composer.on("message", async (ctx: BotContext) => {
       },
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
-  } else if (ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel && ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined && ctx.message?.text) {
-      const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
-      setTextAnswer(userContext, { fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex], value: ctx.message?.text });
-      ctx.session.fieldCurrentIndex += 1;
-      if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
-        const newMessage = await ctx.reply("You finished!! Now use /profile.");
-        ctx.session.lastBotMessageId = newMessage.message_id;
-        ctx.session.fieldStep = FieldStep.FINISH;
-      }
-      else {
-        askField(ctx);
-      }
+  } else if (
+    ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel &&
+    ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
+    ctx.message?.text
+  ) {
+    const userContext: UserContext = createUserContext(
+      ctx.state,
+      ctx.session.userModel.id,
+    ) as unknown as UserContext;
+    setTextAnswer(userContext, {
+      fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
+      value: ctx.message?.text,
+    });
+    ctx.session.fieldCurrentIndex += 1;
+    if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
+      const newMessage = await ctx.reply("You finished!! Now use /profile.");
+      ctx.session.lastBotMessageId = newMessage.message_id;
+      ctx.session.fieldStep = FieldStep.FINISH;
+    } else {
+      askField(ctx);
+    }
   }
 });
 
@@ -423,7 +484,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             },
           },
         );
-      }      else if (ctx.session.registrationStep === RegistrationStep.SecondName) {
+      } else if (ctx.session.registrationStep === RegistrationStep.SecondName) {
         await ctx.api.editMessageText(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
@@ -441,7 +502,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             },
           },
         );
-      }  else if (ctx.session.registrationStep === RegistrationStep.Gender) {
+      } else if (ctx.session.registrationStep === RegistrationStep.Gender) {
         await ctx.api.editMessageText(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
@@ -550,27 +611,39 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         username: ctx.from.username,
         profile: model,
       });
-      if (typeof result === 'object' && result !== null) {
+      if (typeof result === "object" && result !== null) {
         const userModel = result as UserModel;
         ctx.session.userModel = userModel;
       } else {
         // TODO(Azaki-san / Junkyyz): something went wrong. Write error.
       }
 
-    ctx.session.fieldStep = FieldStep.PROCESS;
-    ctx.session.fieldCurrentIndex = 0;
-    if (ctx.session.userModel?.id && ctx.session.userData?.name && ctx.session.userData?.surname && ctx.session.userData?.gender && ctx.session?.userData.birthday && ctx.session?.userData.bio) {
+      ctx.session.fieldStep = FieldStep.PROCESS;
+      ctx.session.fieldCurrentIndex = 0;
+      if (
+        ctx.session.userModel?.id && ctx.session.userData?.name &&
+        ctx.session.userData?.surname && ctx.session.userData?.gender &&
+        ctx.session?.userData.birthday && ctx.session?.userData.bio
+      ) {
         const userId = ctx.session.userModel.id;
         const userContextTemp = createUserContext(ctx.state, userId);
-        if (typeof userContextTemp === 'object' && userContextTemp !== null) {
-          const userContext: UserContext = userContextTemp as unknown as UserContext;
-          const answeredIds: Set<number> = userFieldIds(userContext) as unknown as Set<number>;
-          const allFields: FieldModel[] = fields(ctx.state) as unknown as FieldModel[];
+        if (typeof userContextTemp === "object" && userContextTemp !== null) {
+          const userContext: UserContext =
+            userContextTemp as unknown as UserContext;
+          const answeredIds: Set<number> = userFieldIds(
+            userContext,
+          ) as unknown as Set<number>;
+          const allFields: FieldModel[] = fields(
+            ctx.state,
+          ) as unknown as FieldModel[];
           const allFieldsIds: Set<number> = new Set();
           for (let i = 0; i < allFields.length; i++) {
-              allFieldsIds.add(allFields[i].id);
+            allFieldsIds.add(allFields[i].id);
           }
-          const needToAnswerFieldIds: Set<number> = difference<number>(answeredIds, allFieldsIds);
+          const needToAnswerFieldIds: Set<number> = difference<number>(
+            answeredIds,
+            allFieldsIds,
+          );
           ctx.session.fieldsIds = [...needToAnswerFieldIds];
           ctx.session.fieldAmount = ctx.session.fieldsIds.length;
           // iterate through needToAnswerFieldIds, get Field.
@@ -592,36 +665,41 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
   } else if (data === "edit" && ctx.session.userModel) {
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
 
-    const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
-  const distributionIds: Set<number> = userDistributionsIds(userContext) as unknown as Set<number>;
-  if (distributionIds.size > 1) {
-    const message = await ctx.reply("What information do you want to edit?", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "First Name", callback_data: "edit_FirstName" }],
-          [{ text: "Second Name", callback_data: "edit_SecondName" }], 
-          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
-          [{ text: "Bio", callback_data: "edit_bio" }],
-          [{ text: "Back", callback_data: "cancel_back" }],
-        ],
-      },
-    });
-    ctx.session.lastBotMessageId = message.message_id;
-  } else {
-    const message = await ctx.reply("What information do you want to edit?", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "First Name", callback_data: "edit_FirstName" }],
-          [{ text: "Second Name", callback_data: "edit_SecondName" }],
-          [{ text: "Gender", callback_data: "edit_gender" }],
-          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
-          [{ text: "Bio", callback_data: "edit_bio" }],
-          [{ text: "Back", callback_data: "cancel_back" }],
-        ],
-      },
-    });
-    ctx.session.lastBotMessageId = message.message_id;
-  }
+    const userContext: UserContext = createUserContext(
+      ctx.state,
+      ctx.session.userModel.id,
+    ) as unknown as UserContext;
+    const distributionIds: Set<number> = userDistributionsIds(
+      userContext,
+    ) as unknown as Set<number>;
+    if (distributionIds.size > 1) {
+      const message = await ctx.reply("What information do you want to edit?", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "First Name", callback_data: "edit_FirstName" }],
+            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+            [{ text: "Bio", callback_data: "edit_bio" }],
+            [{ text: "Back", callback_data: "cancel_back" }],
+          ],
+        },
+      });
+      ctx.session.lastBotMessageId = message.message_id;
+    } else {
+      const message = await ctx.reply("What information do you want to edit?", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "First Name", callback_data: "edit_FirstName" }],
+            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Gender", callback_data: "edit_gender" }],
+            [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+            [{ text: "Bio", callback_data: "edit_bio" }],
+            [{ text: "Back", callback_data: "cancel_back" }],
+          ],
+        },
+      });
+      ctx.session.lastBotMessageId = message.message_id;
+    }
   } else if (
     data === "edit_FirstName" && ctx.session.lastBotMessageId && ctx.chat?.id
   ) {
@@ -641,8 +719,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.registrationStep = RegistrationStep.Editing;
     ctx.session.editingStep = EditingStep.FirstNameEdition;
     console.log(ctx.session.editingStep);
-  }
-  else if (
+  } else if (
     data === "edit_SecondName" && ctx.session.lastBotMessageId && ctx.chat?.id
   ) {
     await ctx.api.deleteMessage(
@@ -728,8 +805,13 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     editingConfirmation(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
-  } else if (ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.currentField && ctx.session.currentField.type == FieldType.CHOICE && ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined) {
-    const currentFieldId: number = ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+  } else if (
+    ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.currentField &&
+    ctx.session.currentField.type == FieldType.CHOICE &&
+    ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined
+  ) {
+    const currentFieldId: number =
+      ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = ctx.session.currentField;
     const options: readonly string[] = currentField.options;
     let index = -1;
@@ -738,29 +820,36 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         index = i;
       }
     }
-    if (index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId && ctx.chat) {
-      const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
+    if (
+      index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
+      ctx.chat
+    ) {
+      const userContext: UserContext = createUserContext(
+        ctx.state,
+        ctx.session.userModel.id,
+      ) as unknown as UserContext;
       const ans: readonly number[] = [index];
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
       ctx.session.fieldCurrentIndex += 1;
       if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
-        await ctx.api.editMessageText(ctx.chat.id,
+        await ctx.api.editMessageText(
+          ctx.chat.id,
           ctx.session.lastBotMessageId,
-          "You finished!! Now use /profile.");
-          await ctx.api.editMessageReplyMarkup(
-            ctx.chat.id,
-            ctx.session.lastBotMessageId,
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [],
-                ],
-              },
+          "You finished!! Now use /profile.",
+        );
+        await ctx.api.editMessageReplyMarkup(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [],
+              ],
             },
-          );
+          },
+        );
         ctx.session.fieldStep = FieldStep.FINISH;
-      }
-      else {
+      } else {
         askField(ctx);
       }
     } else {
