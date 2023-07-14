@@ -94,14 +94,14 @@ bot.use(statePlugin(state));
 
 const app = new Application<ServerContext>({ state });
 
-// Step 6.2.1. Register the router.
+// Step 6.2.1. Register CORS middleware.
+
+app.use(oakCors());
+
+// Step 6.2.2. Register the router.
 
 app.use(router.routes());
 app.use(router.allowedMethods());
-
-// Step 6.2.2. Register CORS middleware.
-
-app.use(oakCors());
 
 // Step 6.3. Start the server.
 
