@@ -1,4 +1,4 @@
-import { UserModel, Gender, FieldType } from "./mod.ts";
+import { UserModel, FieldModel, Gender, FieldType } from "./mod.ts";
 
 export interface SessionData {
   registrationStep?: RegistrationStep;
@@ -12,10 +12,12 @@ export interface SessionData {
   fieldCurrentIndex?: number;
   fieldsIds?: number[];
   fieldType?: FieldType;
+  currentField?: FieldModel;
 }
 
 export enum RegistrationStep {
-  Name,
+  FirstName,
+  SecondName,
   Gender,
   Birthday,
   Bio,
@@ -29,7 +31,8 @@ export enum FieldStep {
 }
 
 export enum EditingStep {
-  NameEdition,
+  FirstNameEdition,
+  SecondNameEdition,
   GenderEdition,
   BirthdayEdition,
   BioEdition,
@@ -43,3 +46,8 @@ export interface RegistrationPayload {
   birthday?: string;
   bio?: string;
 }
+
+export type InlineButton = {
+  text: string;
+  callback_data: string;
+};

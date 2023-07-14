@@ -1,6 +1,6 @@
 import { Composer, session } from "../../deps.ts";
 import { ProfileModel, UserModel, Gender, createUserContext, UserContext, isValidDate, createUser, updateUserProfile, userFieldIds, fields, field, difference, setTextAnswer,
-  FieldModel, FieldType} from "./mod.ts";
+  FieldModel, FieldType, makeInlineKeyboard, setChoiceAnswer, userDistributionsIds } from "./mod.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
 import { EditingStep, RegistrationStep, SessionData, FieldStep } from "./types.ts";
@@ -27,7 +27,7 @@ composer.command("start", async (ctx: BotContext) => {
       { parse_mode: "MarkdownV2" },
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
-    await askName(ctx);
+    await askFirstName(ctx);
   } else {
     const newMessage = await ctx.reply(
       "You are already registered. Use /profile :)",
@@ -56,9 +56,9 @@ composer.command("profile", async (ctx: BotContext) => {
 }
 });
 
-async function askName(ctx: BotContext) {
+async function askFirstName(ctx: BotContext) {
   const newMessage = await ctx.reply(
-    "Enter your name and surname like _Name Surname_",
+    "Enter your name like _Name_",
     {
       reply_markup: {
         inline_keyboard: [
@@ -69,7 +69,26 @@ async function askName(ctx: BotContext) {
     },
   );
   ctx.session.lastBotMessageId = newMessage.message_id;
-  ctx.session.registrationStep = RegistrationStep.Name;
+  ctx.session.registrationStep = RegistrationStep.FirstName;
+}
+
+async function askSecondName(ctx: BotContext) {
+  console.log(ctx.session.userData);
+  const newMessage = await ctx.reply(
+    "Enter your surname like _Surname_",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Cancel", callback_data: "cancel" }],
+        ],
+      },
+      parse_mode: "MarkdownV2",
+    },
+  );
+  ctx.session.lastBotMessageId = newMessage.message_id;
+  ctx.session.registrationStep = RegistrationStep.SecondName;
+  ctx.session.previousStep = ctx.session.registrationStep - 1;
+  console.log(ctx.session.userData);
 }
 
 async function askGender(ctx: BotContext) {
@@ -120,16 +139,23 @@ async function askBio(ctx: BotContext) {
 }
 
 async function askField(ctx: BotContext) {
-  if (ctx.session.fieldsIds && ctx.session.fieldCurrentIndex) {
+  if (ctx.session.fieldsIds !== undefined && ctx.session.fieldCurrentIndex !== undefined) {
     const currentFieldId: number = ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = field(ctx.state, { fieldId: currentFieldId }) as unknown as FieldModel;
+    ctx.session.currentField = currentField;
     if (currentField.type === FieldType.TEXT) {
-      const newMessage = await ctx.reply(currentField.format + "\n" + currentField.sample);
+      const newMessage = await ctx.reply(currentField.question);
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldType = FieldType.TEXT;
-    } else if (currentField.type === FieldType.CHOICE) {
-      //TODO(Azaki-san/Junkyyz): add FieldType.CHOICE functionality.
-      console.log(1);
+      ctx.session.lastBotMessageId = newMessage.message_id;
+    }  else if (currentField.type === FieldType.CHOICE) {
+       const options: readonly string[] = currentField.options;
+       const newMessage = await ctx.reply(currentField.question, {
+         reply_markup: {
+           inline_keyboard: makeInlineKeyboard(options),
+         },
+      });
+       ctx.session.lastBotMessageId = newMessage.message_id;
     }
   }
 }
@@ -171,20 +197,42 @@ async function editingBack(ctx: BotContext) {
       ctx.session.lastBotMessageId,
     );
   }
-  const message = await ctx.reply("What information do you want to edit?", {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "Name", callback_data: "edit_name" }],
-        [{ text: "Gender", callback_data: "edit_gender" }],
-        [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
-        [{ text: "Bio", callback_data: "edit_bio" }],
-        [{ text: "Back", callback_data: "cancel_back" }],
-      ],
-    },
-  });
+  if (ctx.session.userModel) {
+  const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
+  const distributionIds: Set<number> = userDistributionsIds(userContext) as unknown as Set<number>;
+  if (distributionIds.size > 1) {
+    const message = await ctx.reply("What information do you want to edit?", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "First Name", callback_data: "edit_FirstName" }],
+          [{ text: "Second Name", callback_data: "edit_SecondName" }], 
+          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+          [{ text: "Bio", callback_data: "edit_bio" }],
+          [{ text: "Back", callback_data: "cancel_back" }],
+        ],
+      },
+    });
+    ctx.session.lastBotMessageId = message.message_id;
+  } else {
+    const message = await ctx.reply("What information do you want to edit?", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "First Name", callback_data: "edit_FirstName" }],
+          [{ text: "Second Name", callback_data: "edit_SecondName" }],
+          [{ text: "Gender", callback_data: "edit_gender" }],
+          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+          [{ text: "Bio", callback_data: "edit_bio" }],
+          [{ text: "Back", callback_data: "cancel_back" }],
+        ],
+      },
+    });
+    ctx.session.lastBotMessageId = message.message_id;
+  }
+
   ctx.session.editingStep = EditingStep.Done;
   ctx.session.registrationStep = RegistrationStep.Finish;
-  ctx.session.lastBotMessageId = message.message_id;
+
+}
 }
 
 composer.on("message", async (ctx: BotContext) => {
@@ -192,20 +240,33 @@ composer.on("message", async (ctx: BotContext) => {
   if (step == RegistrationStep.Editing) {
     {
       const step2 = ctx.session.editingStep;
-      if (step2 == EditingStep.NameEdition && ctx.session.lastBotMessageId) {
-        const nameSurname = ctx.message?.text?.split(" ");
-        if (nameSurname?.length == 2 && ctx.session.userData) {
-          ctx.session.userData.name = nameSurname[0];
-          ctx.session.userData.surname = nameSurname[1];
+      if (step2 == EditingStep.FirstNameEdition && ctx.session.lastBotMessageId) {
+        const name = ctx.message?.text;
+        if (ctx.session.userData) {
+          ctx.session.userData.name = name;
           editingConfirmation(ctx);
           const newMessage = await ctx.reply("Successfully edited!");
           ctx.session.lastBotMessageId = newMessage.message_id;
           ctx.session.editingStep = EditingStep.Done;
           ctx.session.registrationStep = RegistrationStep.Finish;
         } else {
-          ctx.reply("Incorrect format. Try again (Name Surname)");
+          ctx.reply("Incorrect format. Try again (Name)");
         }
-      } else if (step2 == EditingStep.BirthdayEdition) {
+      }
+      if (step2 == EditingStep.SecondNameEdition && ctx.session.lastBotMessageId) {
+        const name = ctx.message?.text;
+        if (ctx.session.userData) {
+          ctx.session.userData.surname = name;
+          editingConfirmation(ctx);
+          const newMessage = await ctx.reply("Successfully edited!");
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.editingStep = EditingStep.Done;
+          ctx.session.registrationStep = RegistrationStep.Finish;
+        } else {
+          ctx.reply("Incorrect format. Try again (Surname)");
+        }
+      }
+      else if (step2 == EditingStep.BirthdayEdition) {
         const birthday = ctx.message?.text ? ctx.message?.text : "";
         if (isValidDate(birthday) && ctx.session.userData) {
           ctx.session.userData.birthday = birthday;
@@ -244,56 +305,54 @@ composer.on("message", async (ctx: BotContext) => {
         }
       }
     }
-  } else if (step == RegistrationStep.Name) {
-      const nameSurname = ctx.message?.text?.split(" ");
-      if (nameSurname?.length == 2) {
-        ctx.session.userData = {
-          name: nameSurname[0],
-          surname: nameSurname[1],
-        };
-        await askGender(ctx);
-      } else {
-        ctx.reply("Incorrect format. Try again (Name Surname)", {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "Cancel", callback_data: "cancel" }],
-            ],
-          },
-        });
-      }
-    } else if (step == RegistrationStep.Gender) {
-      const newMessage = await ctx.reply("Click on the inline button :)");
-      ctx.session.lastBotMessageId = newMessage.message_id;
-    } else if (step == RegistrationStep.Birthday) {
-      const birthday = ctx.message?.text ? ctx.message?.text : "";
-      if (isValidDate(birthday) && ctx.session.userData) {
-        ctx.session.userData.birthday = birthday;
-        await askBio(ctx);
-      } else {
-        const newMessage = await ctx.reply(
-          "Incorrect format. Try again (YYYY-MM-DD)",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }],
-                [{ text: "Cancel", callback_data: "cancel" }],
-              ],
-            },
-          },
-        );
-        ctx.session.lastBotMessageId = newMessage.message_id;
-      }
-    } else if (step == RegistrationStep.Bio && ctx.session.userData) {
-      ctx.session.userData.bio = ctx.message?.text;
-      ctx.session.registrationStep = RegistrationStep.Finish;
-      ctx.session.previousStep = RegistrationStep.Bio;
-      const s = getUserData(ctx);
+  } else if (step == RegistrationStep.FirstName) {
+    const name = ctx.message?.text?.split(" ");
+    if (name?.length == 1) {
+      ctx.session.userData = {
+        name: name[0],
+      };
+      console.log(name);
+      console.log(ctx.session.userData);
+      await askSecondName(ctx);
+    } else {
+      ctx.reply("Incorrect format. Try again (Name)", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Cancel", callback_data: "cancel" }],
+          ],
+        },
+      });
+    }
+  }else if (step == RegistrationStep.SecondName) {
+    console.log(ctx.session.userData);
+    const nameSurname = ctx.message?.text?.split(" ");
+    if (nameSurname?.length == 1 && ctx.session.userData) {
+      ctx.session.userData.surname = nameSurname[0];
+      await askGender(ctx);
+    } else {
+      ctx.reply("Incorrect format. Try again (Surname)", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Cancel", callback_data: "cancel" }],
+          ],
+        },
+      });
+    }
+  }
+   else if (step == RegistrationStep.Gender) {
+    const newMessage = await ctx.reply("Click on the inline button :)");
+    ctx.session.lastBotMessageId = newMessage.message_id;
+  } else if (step == RegistrationStep.Birthday) {
+    const birthday = ctx.message?.text ? ctx.message?.text : "";
+    if (isValidDate(birthday) && ctx.session.userData) {
+      ctx.session.userData.birthday = birthday;
+      await askBio(ctx);
+    } else {
       const newMessage = await ctx.reply(
-        `Your information profile:\n${s}Confirm?`,
+        "Incorrect format. Try again (YYYY-MM-DD)",
         {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "Confirm", callback_data: "confirm" }],
               [{ text: "Back", callback_data: "back" }],
               [{ text: "Cancel", callback_data: "cancel" }],
             ],
@@ -301,7 +360,26 @@ composer.on("message", async (ctx: BotContext) => {
         },
       );
       ctx.session.lastBotMessageId = newMessage.message_id;
-    } else if (ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel && ctx.session.fieldsIds && ctx.session.fieldCurrentIndex && ctx.message?.text) {
+    }
+  } else if (step == RegistrationStep.Bio && ctx.session.userData) {
+    ctx.session.userData.bio = ctx.message?.text;
+    ctx.session.registrationStep = RegistrationStep.Finish;
+    ctx.session.previousStep = RegistrationStep.Bio;
+    const s = getUserData(ctx);
+    const newMessage = await ctx.reply(
+      `Your information profile:\n${s}Confirm?`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Confirm", callback_data: "confirm" }],
+            [{ text: "Back", callback_data: "back" }],
+            [{ text: "Cancel", callback_data: "cancel" }],
+          ],
+        },
+      },
+    );
+    ctx.session.lastBotMessageId = newMessage.message_id;
+  } else if (ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel && ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined && ctx.message?.text) {
       const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
       setTextAnswer(userContext, { fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex], value: ctx.message?.text });
       ctx.session.fieldCurrentIndex += 1;
@@ -309,6 +387,9 @@ composer.on("message", async (ctx: BotContext) => {
         const newMessage = await ctx.reply("You finished!! Now use /profile.");
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.fieldStep = FieldStep.FINISH;
+      }
+      else {
+        askField(ctx);
       }
   }
 });
@@ -324,11 +405,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.registrationStep -= 1;
     ctx.session.previousStep -= 1;
     if (ctx.chat?.id && ctx.session.lastBotMessageId) {
-      if (ctx.session.registrationStep === RegistrationStep.Name) {
+      if (ctx.session.registrationStep === RegistrationStep.FirstName) {
         await ctx.api.editMessageText(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
-          "Enter your name and surname like _Name Surname_",
+          "Enter your name like _Name_",
           { parse_mode: "MarkdownV2" },
         );
         await ctx.api.editMessageReplyMarkup(
@@ -342,7 +423,25 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             },
           },
         );
-      } else if (ctx.session.registrationStep === RegistrationStep.Gender) {
+      }      else if (ctx.session.registrationStep === RegistrationStep.SecondName) {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          "Enter your surname like _Surname_",
+          { parse_mode: "MarkdownV2" },
+        );
+        await ctx.api.editMessageReplyMarkup(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "Cancel", callback_data: "cancel" }],
+              ],
+            },
+          },
+        );
+      }  else if (ctx.session.registrationStep === RegistrationStep.Gender) {
         await ctx.api.editMessageText(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
@@ -400,7 +499,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         );
       }
     }
-  } else if (data == "cancel") {
+  } else if (data === "cancel") {
     const newMessage = await ctx.reply(
       "Registration was cancelled. Click /start if you remind.",
     );
@@ -434,37 +533,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
   ) {
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.previousStep = undefined;
-    ctx.session.fieldStep = FieldStep.PROCESS;
-    ctx.session.fieldCurrentIndex = 0;
-    // TODO(Azaki-san/Junkyyz): get fields.
-    if (ctx.session.userModel?.id && ctx.session.userData?.name && ctx.session.userData?.surname && ctx.session.userData?.gender && ctx.session?.userData.birthday && ctx.session?.userData.bio) {
-        const userId = ctx.session.userModel.id;
-        const userContextTemp = createUserContext(ctx.state, userId);
-        if (typeof userContextTemp === 'object' && userContextTemp !== null) {
-          const userContext: UserContext = userContextTemp as unknown as UserContext;
-          const answeredIds: Set<number> = userFieldIds(userContext) as unknown as Set<number>;
-          const allFields: FieldModel[] = fields(ctx.state) as unknown as FieldModel[];
-          let allFieldsIds: Set<number> = new Set();
-          for (let i = 0; i < allFields.length; i++) {
-              allFieldsIds.add(allFields[i].id);
-          }
-          const needToAnswerFieldIds: Set<number> = difference<number>(answeredIds, allFieldsIds);
-          ctx.session.fieldsIds = [...needToAnswerFieldIds];
-          ctx.session.fieldAmount = ctx.session.fieldsIds.length;
-          // iterate through needToAnswerFieldIds, get Field.
-          if (needToAnswerFieldIds) {
-            await ctx.api.editMessageText(
-              ctx.chat.id,
-              ctx.session.lastBotMessageId,
-              "Confirmed! Now you are registered, but also you need to answer some questions about personality. Please, answer honestly :)\nLet's start now!!",
-            );
-            await askField(ctx);
-          }
-        } else {
-          // TODO(Junkyyz): Write error.
-        }
-      }
-    
+
     const model: ProfileModel = {
       firstName: ctx.session.userData.name,
       lastName: ctx.session.userData.surname,
@@ -487,16 +556,63 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       } else {
         // TODO(Azaki-san / Junkyyz): something went wrong. Write error.
       }
+
+    ctx.session.fieldStep = FieldStep.PROCESS;
+    ctx.session.fieldCurrentIndex = 0;
+    if (ctx.session.userModel?.id && ctx.session.userData?.name && ctx.session.userData?.surname && ctx.session.userData?.gender && ctx.session?.userData.birthday && ctx.session?.userData.bio) {
+        const userId = ctx.session.userModel.id;
+        const userContextTemp = createUserContext(ctx.state, userId);
+        if (typeof userContextTemp === 'object' && userContextTemp !== null) {
+          const userContext: UserContext = userContextTemp as unknown as UserContext;
+          const answeredIds: Set<number> = userFieldIds(userContext) as unknown as Set<number>;
+          const allFields: FieldModel[] = fields(ctx.state) as unknown as FieldModel[];
+          const allFieldsIds: Set<number> = new Set();
+          for (let i = 0; i < allFields.length; i++) {
+              allFieldsIds.add(allFields[i].id);
+          }
+          const needToAnswerFieldIds: Set<number> = difference<number>(answeredIds, allFieldsIds);
+          ctx.session.fieldsIds = [...needToAnswerFieldIds];
+          ctx.session.fieldAmount = ctx.session.fieldsIds.length;
+          // iterate through needToAnswerFieldIds, get Field.
+          if (needToAnswerFieldIds && ctx.session.fieldAmount > 0) {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "Confirmed! Now you are registered, but also you need to answer some questions about personality. Please, answer honestly :)\nLet's start now!!",
+            );
+            await askField(ctx);
+          }
+        } else {
+          // TODO(Junkyyz): Write error \ Confirm registration because there are no questions.
+        }
+      }
     } else {
-      // TODO(Azaki-san): ask for a permission
+      // TODO(junkyyz): ask for a permission
     }
-  } else if (data === "edit") {
+  } else if (data === "edit" && ctx.session.userModel) {
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
 
+    const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
+  const distributionIds: Set<number> = userDistributionsIds(userContext) as unknown as Set<number>;
+  if (distributionIds.size > 1) {
     const message = await ctx.reply("What information do you want to edit?", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Name", callback_data: "edit_name" }],
+          [{ text: "First Name", callback_data: "edit_FirstName" }],
+          [{ text: "Second Name", callback_data: "edit_SecondName" }], 
+          [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
+          [{ text: "Bio", callback_data: "edit_bio" }],
+          [{ text: "Back", callback_data: "cancel_back" }],
+        ],
+      },
+    });
+    ctx.session.lastBotMessageId = message.message_id;
+  } else {
+    const message = await ctx.reply("What information do you want to edit?", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "First Name", callback_data: "edit_FirstName" }],
+          [{ text: "Second Name", callback_data: "edit_SecondName" }],
           [{ text: "Gender", callback_data: "edit_gender" }],
           [{ text: "Date of Birthday", callback_data: "edit_birthday" }],
           [{ text: "Bio", callback_data: "edit_bio" }],
@@ -504,10 +620,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         ],
       },
     });
-
     ctx.session.lastBotMessageId = message.message_id;
+  }
   } else if (
-    data === "edit_name" && ctx.session.lastBotMessageId && ctx.chat?.id
+    data === "edit_FirstName" && ctx.session.lastBotMessageId && ctx.chat?.id
   ) {
     await ctx.api.deleteMessage(
       ctx.chat.id,
@@ -523,7 +639,27 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     });
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = RegistrationStep.Editing;
-    ctx.session.editingStep = EditingStep.NameEdition;
+    ctx.session.editingStep = EditingStep.FirstNameEdition;
+    console.log(ctx.session.editingStep);
+  }
+  else if (
+    data === "edit_SecondName" && ctx.session.lastBotMessageId && ctx.chat?.id
+  ) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
+    const newMessage = await ctx.reply("Enter your new surname:", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Back", callback_data: "edit_back" }],
+          [{ text: "Cancel", callback_data: "cancel_back" }],
+        ],
+      },
+    });
+    ctx.session.lastBotMessageId = newMessage.message_id;
+    ctx.session.registrationStep = RegistrationStep.Editing;
+    ctx.session.editingStep = EditingStep.SecondNameEdition;
     console.log(ctx.session.editingStep);
   } else if (
     data === "edit_gender" && ctx.session.lastBotMessageId && ctx.chat?.id
@@ -592,5 +728,43 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     editingConfirmation(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
+  } else if (ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.currentField && ctx.session.currentField.type == FieldType.CHOICE && ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined) {
+    const currentFieldId: number = ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+    const currentField: FieldModel = ctx.session.currentField;
+    const options: readonly string[] = currentField.options;
+    let index = -1;
+    for (let i = 0; i < options.length; i++) {
+      if (data === options[i]) {
+        index = i;
+      }
+    }
+    if (index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId && ctx.chat) {
+      const userContext: UserContext = createUserContext(ctx.state, ctx.session.userModel.id) as unknown as UserContext;
+      const ans: readonly number[] = [index];
+      setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
+      ctx.session.fieldCurrentIndex += 1;
+      if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
+        await ctx.api.editMessageText(ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          "You finished!! Now use /profile.");
+          await ctx.api.editMessageReplyMarkup(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [],
+                ],
+              },
+            },
+          );
+        ctx.session.fieldStep = FieldStep.FINISH;
+      }
+      else {
+        askField(ctx);
+      }
+    } else {
+      // TODO(Azaki-san/Junkyyz): Error Message.
+    }
   }
 });
