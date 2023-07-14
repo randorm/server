@@ -15,7 +15,8 @@ export interface SessionData {
 }
 
 export enum RegistrationStep {
-  Name,
+  FirstName,
+  SecondName,
   Gender,
   Birthday,
   Bio,
@@ -29,7 +30,8 @@ export enum FieldStep {
 }
 
 export enum EditingStep {
-  NameEdition,
+  FirstNameEdition,
+  SecondNameEdition,
   GenderEdition,
   BirthdayEdition,
   BioEdition,
