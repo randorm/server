@@ -124,10 +124,8 @@ async function askGender(ctx: BotContext) {
   const newMessage = await ctx.reply("Please, select your gender.", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Male", callback_data: "MALE" }],
-        [{ text: "Female", callback_data: "FEMALE" }],
-        [{ text: "Back", callback_data: "back" }],
-        [{ text: "Cancel", callback_data: "cancel" }],
+        [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
+        [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
       ],
     },
   });
@@ -142,8 +140,7 @@ async function askBirthday(ctx: BotContext) {
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "back" }],
-          [{ text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
         ],
       },
     },
@@ -157,8 +154,7 @@ async function askBio(ctx: BotContext) {
   const newMessage = await ctx.reply("Enter your bio (a few sentences).", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Back", callback_data: "back" }],
-        [{ text: "Cancel", callback_data: "cancel" }],
+        [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
       ],
     },
   });
@@ -386,7 +382,7 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.reply("Incorrect format. Try again (Surname)", {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Cancel", callback_data: "cancel" }],
+            [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
           ],
         },
       });
@@ -405,8 +401,7 @@ composer.on("message", async (ctx: BotContext) => {
         {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "Back", callback_data: "back" }],
-              [{ text: "Cancel", callback_data: "cancel" }],
+              [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
             ],
           },
         },
@@ -424,8 +419,7 @@ composer.on("message", async (ctx: BotContext) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: "Confirm", callback_data: "confirm" }],
-            [{ text: "Back", callback_data: "back" }],
-            [{ text: "Cancel", callback_data: "cancel" }],
+            [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
           ],
         },
       },
@@ -497,7 +491,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
               ],
             },
           },
@@ -514,10 +508,8 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Male", callback_data: "MALE" }],
-                [{ text: "Female", callback_data: "FEMALE" }],
-                [{ text: "Back", callback_data: "back" }],
-                [{ text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
+                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
               ],
             },
           },
@@ -534,8 +526,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }],
-                [{ text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
               ],
             },
           },
@@ -552,8 +543,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }],
-                [{ text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
               ],
             },
           },
@@ -710,8 +700,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new name:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }],
-          [{ text: "Cancel", callback_data: "cancel_back" }],
+          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
         ],
       },
     });
@@ -729,8 +718,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new surname:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }],
-          [{ text: "Cancel", callback_data: "cancel_back" }],
+          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
         ],
       },
     });
@@ -748,10 +736,8 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Select your new gender:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Male", callback_data: "MALE" }],
-          [{ text: "Female", callback_data: "FEMALE" }],
-          [{ text: "Back", callback_data: "edit_back" }],
-          [{ text: "Cancel", callback_data: "cancel_back" }],
+          [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
+          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
         ],
       },
     });
@@ -770,8 +756,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Back", callback_data: "edit_back" }],
-            [{ text: "Cancel", callback_data: "cancel_back" }],
+            [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
           ],
         },
       },
@@ -789,8 +774,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new bio:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }],
-          [{ text: "Cancel", callback_data: "cancel_back" }],
+          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
         ],
       },
     });
