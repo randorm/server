@@ -5,6 +5,7 @@ import type { BotContext, ServerContext } from "./types.ts";
 import {
   PORT,
   setupKeys,
+  setupState,
   STORAGE_KEY_GROUPS,
   STORAGE_VERSION,
 } from "./utils/mod.ts";
@@ -31,17 +32,19 @@ if (!BOT_TOKEN) {
 
 const bot = new Bot<BotContext>(BOT_TOKEN);
 
-// // Step 2.3. Register bot middlewares.
+// Step 2.3. Register bot handlers.
 
 bot.use(composer);
 
-// Step 2.4. Create a webhook callback.
+////////////////////////////////////////////////////////////////
+
+// Step 3. Create a webhook callback.
 
 const webhook = webhookCallback(bot, "oak");
 
 ////////////////////////////////////////////////////////////////
 
-// Step 3.1. Get a JWK.
+// Step 4.1. Get a JWK.
 
 const JWK = Deno.env.get("JWK");
 
@@ -49,7 +52,7 @@ if (!JWK) {
   throw new Error("Missing `JWK` environment variable");
 }
 
-// Step 3.2. Create a CryptoKey instance.
+// Step 4.2. Create a CryptoKey instance.
 
 const jwk = await crypto.subtle.importKey(
   "jwk",
@@ -61,7 +64,7 @@ const jwk = await crypto.subtle.importKey(
 
 ////////////////////////////////////////////////////////////////
 
-// Step 4.1. Create a ServerContext object.
+// Step 5. Create a ServerContext object.
 
 const state: ServerContext = {
   kv,
@@ -73,40 +76,44 @@ const state: ServerContext = {
 
 ////////////////////////////////////////////////////////////////
 
-// Step 5.1. Create a statePlugin function.
+// Step 6. Register bot state middleware.
 
-export function statePlugin(state: ServerContext) {
-  // deno-lint-ignore no-explicit-any
-  return (ctx: { state: ServerContext; }, next: () => any) => {
-    ctx.state = state;
-
-    return next();
-  };
-}
-
-// Step 5.3. Register the statePlugin function.
-
-bot.use(statePlugin(state));
+bot.use(setupState(state));
 
 ////////////////////////////////////////////////////////////////
 
-// Step 6.1. Create an Application instance.
+// Step 7.1. Create an Application instance.
 
 const app = new Application<ServerContext>();
 
-// Step 6.2.1. Register the statePlugin function.
+// Step 7.2.1. Register application state middleware.
 
-app.use(statePlugin(state));
+app.use(setupState(state));
 
-// Step 6.2.1. Register CORS middleware.
+// Step 7.2.1. Register CORS middleware.
 
 app.use(oakCors());
 
-// Step 6.2.2. Register the router.
+// Step 7.2.2. Register application routes.
 
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// Step 6.3. Start the server.
+////////////////////////////////////////////////////////////////
 
-await app.listen({ port: PORT });
+// Step 8.1. Get the server origin.
+
+const ORIGIN = Deno.env.get("ORIGIN");
+
+if (!ORIGIN) {
+  throw new Error("Missing `ORIGIN` environment variable");
+}
+
+const WEBHOOK_URL = new URL("/bot", ORIGIN);
+
+// Step 8.2. Start the server.
+
+await Promise.all([
+  app.listen({ port: PORT }),
+  bot.api.setWebhook(WEBHOOK_URL.toString()),
+]);
