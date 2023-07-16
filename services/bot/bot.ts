@@ -306,13 +306,13 @@ async function askField(ctx: BotContext) {
     });
     ctx.session.currentField = currentField;
     if (currentField.type === FieldType.TEXT) {
-      const newMessage = await ctx.reply(currentField.question);
+      const newMessage = await ctx.reply(ctx.session.currentField.question);
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldType = FieldType.TEXT;
       ctx.session.lastBotMessageId = newMessage.message_id;
     } else if (currentField.type === FieldType.CHOICE) {
       const options: readonly string[] = currentField.options;
-      const newMessage = await ctx.reply(currentField.question, {
+      const newMessage = await ctx.reply(ctx.session.currentField.question, {
         reply_markup: {
           inline_keyboard: makeInlineKeyboard(options),
         },
