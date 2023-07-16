@@ -83,7 +83,8 @@ composer.command("focuspocus", async (ctx: BotContext) => {
 
 composer.command("answer", async (ctx: BotContext) => {
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
-    await ctx.reply("Let's start answering the questions :)");
+    const newMessage = await ctx.reply("Let's start answering the questions :)");
+    ctx.session.lastBotMessageId = newMessage.id;
     ctx.session.fieldStep = FieldStep.PROCESS;
     ctx.session.fieldCurrentIndex = 0;
     if (
