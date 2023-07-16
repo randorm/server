@@ -49,6 +49,7 @@ const webhook = webhookCallback(bot, "oak");
 // Step 3.2. Create a session middleware.
 
 const sessionMiddleware = session<SessionData, BotContext>({
+  initial: () => ({}),
   storage: new DenoKVAdapter(kv),
 });
 
