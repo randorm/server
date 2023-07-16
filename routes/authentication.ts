@@ -14,6 +14,7 @@ import {
   AUTHENTICATION_TIME_LIMIT,
   AUTHENTICATION_TOKEN_TTL,
   AuthenticationData,
+  WebAppData
 } from "../utils/mod.ts";
 
 export const router = new Router<ServerContext>();
@@ -21,7 +22,7 @@ export const router = new Router<ServerContext>();
 router.post("/authenticate", async (ctx) => {
   const body = ctx.request.body();
 
-  let authenticationData: z.infer<typeof AuthenticationData>;
+  let data: z.infer<typeof AuthenticationData> | z.infer<typeof WebAppData>;
   switch (body.type) {
     case "json": {
       const bodyValue = await body.value;
@@ -52,13 +53,26 @@ router.post("/authenticate", async (ctx) => {
         return;
       }
 
-      authenticationData = validationResult.data;
+      const { milliseconds } = difference(
+        new Date(validationResult.data.auth_date * 1000),
+        new Date(),
+        { units: ["milliseconds"] },
+      );
+    
+      if (!milliseconds || milliseconds > AUTHENTICATION_TIME_LIMIT) {
+        ctx.response.status = Status.Unauthorized;
+        ctx.response.type = "text/plain";
+        ctx.response.body = "Authentication time limit exceeded";
+    
+        return;
+      }
+
+      data = validationResult.data;
 
       break;
     }
     case "text": {
       const bodyValue = await body.value;
-      console.log(bodyValue);
 
       const searchParams = new URLSearchParams(bodyValue);
 
@@ -85,7 +99,7 @@ router.post("/authenticate", async (ctx) => {
         return;
       }
 
-      const validationResult = AuthenticationData.safeParse(
+      const validationResult = WebAppData.safeParse(
         JSON.parse(serializedUser),
       );
 
@@ -97,7 +111,22 @@ router.post("/authenticate", async (ctx) => {
         return;
       }
 
-      authenticationData = validationResult.data;
+      const { milliseconds } = difference(
+        new Date(Number(searchParams.get("auth_date")) * 1000),
+        new Date(),
+        { units: ["milliseconds"] },
+      );
+    
+      if (!milliseconds || milliseconds > AUTHENTICATION_TIME_LIMIT) {
+        ctx.response.status = Status.Unauthorized;
+        ctx.response.type = "text/plain";
+        ctx.response.body = "Authentication time limit exceeded";
+    
+        return;
+      }
+
+
+      data = validationResult.data;
 
       break;
     }
@@ -110,23 +139,9 @@ router.post("/authenticate", async (ctx) => {
     }
   }
 
-  const { milliseconds } = difference(
-    new Date(authenticationData.auth_date * 1000),
-    new Date(),
-    { units: ["milliseconds"] },
-  );
-
-  if (!milliseconds || milliseconds > AUTHENTICATION_TIME_LIMIT) {
-    ctx.response.status = Status.Unauthorized;
-    ctx.response.type = "text/plain";
-    ctx.response.body = "Authentication time limit exceeded";
-
-    return;
-  }
-
   const userByTelegramIdRes = await ctx.state.kv.get<number>([
     "user_by_telegram_id",
-    authenticationData.id,
+    data.id,
   ]);
 
   if (userByTelegramIdRes.value === null) {
