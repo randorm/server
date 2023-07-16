@@ -1044,7 +1044,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       //     reply_markup: undefined,
       //   },
       // );
-      if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
+      if (ctx.session.fieldsIds.length === 1 && ctx.session.distributionId !== undefined) {
         await ctx.reply("Yooo congratulations, you finished! Now use /feed")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
