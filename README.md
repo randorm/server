@@ -11,7 +11,7 @@ The Randorm server is responsible for handling the backend logic of the Randorm 
 
 ## Demo
 
-Will be later...
+![alt-text](.gitlab/preview.gif)
 
 ## Installation
 
