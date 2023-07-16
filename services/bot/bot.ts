@@ -112,8 +112,8 @@ composer.command("answer", async (ctx: BotContext) => {
         );
         console.log(answeredIds);
         const needToAnswerFieldIds: Set<number> = difference<number>(
-          answeredIds,
           allFieldsIds,
+          answeredIds,
         );
         console.log(needToAnswerFieldIds);
         ctx.session.fieldsIds = [...needToAnswerFieldIds];
