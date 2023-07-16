@@ -23,9 +23,9 @@ export function assertTextField(field: TextFieldModel) {
 }
 
 export function assertChoiceField(field: ChoiceFieldModel) {
-  if (!field.question || field.question.length > 256) {
+  if (!field.question || field.question.length > 1024) {
     throw new GraphQLError(
-      "Question of ChoiceField must be between 1 and 256 characters",
+      "Question of ChoiceField must be between 1 and 1024 characters",
     );
   }
 
