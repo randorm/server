@@ -12,24 +12,26 @@ export {
   Bot,
   Composer,
   session,
-  webhookCallback
+  webhookCallback,
 } from "https://deno.land/x/grammy@v1.17.1/mod.ts";
+export { DenoKVAdapter } from "https://deno.land/x/grammy_storages/denokv/src/mod.ts";
 export type {
   Context,
-  MiddlewareFn
+  MiddlewareFn,
 } from "https://deno.land/x/grammy@v1.17.1/mod.ts";
 export {
   checkSignature,
-  validateWebAppData
+  validateWebAppData,
 } from "https://deno.land/x/grammy_validator@v1.0.1/mod.ts";
 export {
   Application,
   Router,
-  Status
+  Status,
 } from "https://deno.land/x/oak@v12.5.0/mod.ts";
 export { z } from "https://deno.land/x/zod@v3.21.4/mod.ts";
 export { renderPlaygroundPage } from "https://esm.sh/graphql-playground-html@1.6.30";
 export {
+  graphql,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLError,
@@ -42,7 +44,6 @@ export {
   GraphQLSchema,
   GraphQLString,
   GraphQLUnionType,
-  Kind, graphql
+  Kind,
 } from "https://esm.sh/graphql@16.5.0";
 export type { GraphQLFieldConfigMap } from "https://esm.sh/graphql@16.5.0";
-

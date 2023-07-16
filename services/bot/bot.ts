@@ -1,23 +1,10 @@
 import { Composer, session } from "../../deps.ts";
 import {
-  createUser,
-  createUserContext,
-  difference,
-  field,
   FieldModel,
-  fields,
   FieldType,
   Gender,
-  isValidDate,
-  makeInlineKeyboard,
   ProfileModel,
-  setChoiceAnswer,
-  setTextAnswer,
-  updateUserProfile,
   UserContext,
-  userDistributionsIds,
-  userFieldIds,
-  UserModel,
 } from "./mod.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
@@ -27,11 +14,29 @@ import {
   RegistrationStep,
   SessionData,
 } from "./types.ts";
+import { DenoKVAdapter } from "../../deps.ts";
+import {
+  createUser,
+  updateUserProfile,
+  userDistributionsIds,
+  userFieldIds,
+} from "../database/operation/user.ts";
+import {
+  setChoiceAnswer,
+  setTextAnswer,
+} from "../database/operation/answer.ts";
+import { difference } from "../../utils/iter.ts";
+import { isValidDate } from "./tools/validDateTemp.ts";
+import { makeInlineKeyboard } from "./tools/InlineKeyboardMaker.ts";
+import { createUserContext } from "./tools/authentificate.ts";
+import { field, fields } from "../database/operation/field.ts";
 
 export const composer = new Composer<BotContext>();
+const kv = await Deno.openKv("./services/bot/kv.db");
 
 const sessionMiddleware = session<SessionData, BotContext>({
   initial: () => ({}),
+  storage: new DenoKVAdapter(kv),
 });
 
 composer.use(sessionMiddleware);
@@ -102,7 +107,6 @@ async function askFirstName(ctx: BotContext) {
 }
 
 async function askSecondName(ctx: BotContext) {
-  console.log(ctx.session.userData);
   const newMessage = await ctx.reply(
     "Enter your surname like _Surname_",
     {
@@ -117,15 +121,20 @@ async function askSecondName(ctx: BotContext) {
   ctx.session.lastBotMessageId = newMessage.message_id;
   ctx.session.registrationStep = RegistrationStep.SecondName;
   ctx.session.previousStep = ctx.session.registrationStep - 1;
-  console.log(ctx.session.userData);
 }
 
 async function askGender(ctx: BotContext) {
   const newMessage = await ctx.reply("Please, select your gender.", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
-        [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+        [{ text: "Male", callback_data: "MALE" }, {
+          text: "Female",
+          callback_data: "FEMALE",
+        }],
+        [{ text: "Back", callback_data: "back" }, {
+          text: "Cancel",
+          callback_data: "cancel",
+        }],
       ],
     },
   });
@@ -140,7 +149,10 @@ async function askBirthday(ctx: BotContext) {
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
     },
@@ -154,7 +166,10 @@ async function askBio(ctx: BotContext) {
   const newMessage = await ctx.reply("Enter your bio (a few sentences).", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+        [{ text: "Back", callback_data: "back" }, {
+          text: "Cancel",
+          callback_data: "cancel",
+        }],
       ],
     },
   });
@@ -170,9 +185,9 @@ async function askField(ctx: BotContext) {
   ) {
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
-    const currentField: FieldModel = field(ctx.state, {
+    const currentField: FieldModel = await field(ctx.state, {
       fieldId: currentFieldId,
-    }) as unknown as FieldModel;
+    });
     ctx.session.currentField = currentField;
     if (currentField.type === FieldType.TEXT) {
       const newMessage = await ctx.reply(currentField.question);
@@ -229,13 +244,13 @@ async function editingBack(ctx: BotContext) {
     );
   }
   if (ctx.session.userModel) {
-    const userContext: UserContext = createUserContext(
+    const userContext: UserContext = await createUserContext(
       ctx.state,
       ctx.session.userModel.id,
-    ) as unknown as UserContext;
-    const distributionIds: Set<number> = userDistributionsIds(
+    );
+    const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
-    ) as unknown as Set<number>;
+    );
     if (distributionIds.size > 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
@@ -334,10 +349,8 @@ composer.on("message", async (ctx: BotContext) => {
           ctx.session?.userData.birthday && ctx.session?.userData.bio
         ) {
           const userId = ctx.session.userModel.id;
-          const userContextTemp = createUserContext(ctx.state, userId);
-          if (typeof userContextTemp === "object" && userContextTemp !== null) {
-            const userContext: UserContext =
-              userContextTemp as unknown as UserContext;
+          const userContext = await createUserContext(ctx.state, userId);
+          if (typeof userContext === "object" && userContext !== null) {
             const model: ProfileModel = {
               firstName: ctx.session.userData.name,
               lastName: ctx.session.userData.surname,
@@ -360,8 +373,6 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.session.userData = {
         name: name[0],
       };
-      console.log(name);
-      console.log(ctx.session.userData);
       await askSecondName(ctx);
     } else {
       ctx.reply("Incorrect format. Try again (Name)", {
@@ -373,7 +384,6 @@ composer.on("message", async (ctx: BotContext) => {
       });
     }
   } else if (step == RegistrationStep.SecondName) {
-    console.log(ctx.session.userData);
     const nameSurname = ctx.message?.text?.split(" ");
     if (nameSurname?.length == 1 && ctx.session.userData) {
       ctx.session.userData.surname = nameSurname[0];
@@ -382,7 +392,10 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.reply("Incorrect format. Try again (Surname)", {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+            [{ text: "Back", callback_data: "back" }, {
+              text: "Cancel",
+              callback_data: "cancel",
+            }],
           ],
         },
       });
@@ -401,7 +414,10 @@ composer.on("message", async (ctx: BotContext) => {
         {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+              [{ text: "Back", callback_data: "back" }, {
+                text: "Cancel",
+                callback_data: "cancel",
+              }],
             ],
           },
         },
@@ -419,7 +435,10 @@ composer.on("message", async (ctx: BotContext) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: "Confirm", callback_data: "confirm" }],
-            [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+            [{ text: "Back", callback_data: "back" }, {
+              text: "Cancel",
+              callback_data: "cancel",
+            }],
           ],
         },
       },
@@ -430,10 +449,10 @@ composer.on("message", async (ctx: BotContext) => {
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
     ctx.message?.text
   ) {
-    const userContext: UserContext = createUserContext(
+    const userContext: UserContext = await createUserContext(
       ctx.state,
       ctx.session.userModel.id,
-    ) as unknown as UserContext;
+    );
     setTextAnswer(userContext, {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
@@ -491,7 +510,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, {
+                  text: "Cancel",
+                  callback_data: "cancel",
+                }],
               ],
             },
           },
@@ -508,8 +530,14 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
-                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Male", callback_data: "MALE" }, {
+                  text: "Female",
+                  callback_data: "FEMALE",
+                }],
+                [{ text: "Back", callback_data: "back" }, {
+                  text: "Cancel",
+                  callback_data: "cancel",
+                }],
               ],
             },
           },
@@ -526,7 +554,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, {
+                  text: "Cancel",
+                  callback_data: "cancel",
+                }],
               ],
             },
           },
@@ -543,7 +574,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Back", callback_data: "back" }, { text: "Cancel", callback_data: "cancel" }],
+                [{ text: "Back", callback_data: "back" }, {
+                  text: "Cancel",
+                  callback_data: "cancel",
+                }],
               ],
             },
           },
@@ -582,9 +616,6 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.userData.surname && ctx.session.userData.bio && ctx.chat?.id &&
     ctx.session.lastBotMessageId
   ) {
-    ctx.session.registrationStep = RegistrationStep.Finish;
-    ctx.session.previousStep = undefined;
-
     const model: ProfileModel = {
       firstName: ctx.session.userData.name,
       lastName: ctx.session.userData.surname,
@@ -596,13 +627,14 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     };
 
     if (ctx.from?.username) {
-      const result = await createUser(ctx.state, {
+      ctx.session.registrationStep = RegistrationStep.Finish;
+      ctx.session.previousStep = undefined;
+      const userModel = await createUser(ctx.state, {
         telegramId: ctx.from.id,
         username: ctx.from.username,
         profile: model,
       });
-      if (typeof result === "object" && result !== null) {
-        const userModel = result as UserModel;
+      if (typeof userModel === "object" && userModel !== null) {
         ctx.session.userModel = userModel;
       } else {
         // TODO(Azaki-san / Junkyyz): something went wrong. Write error.
@@ -616,16 +648,17 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         ctx.session?.userData.birthday && ctx.session?.userData.bio
       ) {
         const userId = ctx.session.userModel.id;
-        const userContextTemp = createUserContext(ctx.state, userId);
-        if (typeof userContextTemp === "object" && userContextTemp !== null) {
-          const userContext: UserContext =
-            userContextTemp as unknown as UserContext;
-          const answeredIds: Set<number> = userFieldIds(
+        const userContext: UserContext = await createUserContext(
+          ctx.state,
+          userId,
+        );
+        if (typeof userContext === "object" && userContext !== null) {
+          const answeredIds: Set<number> = await userFieldIds(
             userContext,
-          ) as unknown as Set<number>;
-          const allFields: FieldModel[] = fields(
+          );
+          const allFields: FieldModel[] = await fields(
             ctx.state,
-          ) as unknown as FieldModel[];
+          );
           const allFieldsIds: Set<number> = new Set();
           for (let i = 0; i < allFields.length; i++) {
             allFieldsIds.add(allFields[i].id);
@@ -644,9 +677,16 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
               "Confirmed! Now you are registered, but also you need to answer some questions about personality. Please, answer honestly :)\nLet's start now!!",
             );
             await askField(ctx);
+          } else {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "Confirmed! Now you are registered. Use /profile!!",
+            );
+            ctx.session.fieldStep = FieldStep.FINISH;
           }
         } else {
-          // TODO(Junkyyz): Write error \ Confirm registration because there are no questions.
+          // TODO(Junkyyz): Write error.
         }
       }
     } else {
@@ -655,13 +695,13 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
   } else if (data === "edit" && ctx.session.userModel) {
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
 
-    const userContext: UserContext = createUserContext(
+    const userContext: UserContext = await createUserContext(
       ctx.state,
       ctx.session.userModel.id,
-    ) as unknown as UserContext;
-    const distributionIds: Set<number> = userDistributionsIds(
+    );
+    const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
-    ) as unknown as Set<number>;
+    );
     if (distributionIds.size > 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
@@ -700,14 +740,16 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new name:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "edit_back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
     });
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = RegistrationStep.Editing;
     ctx.session.editingStep = EditingStep.FirstNameEdition;
-    console.log(ctx.session.editingStep);
   } else if (
     data === "edit_SecondName" && ctx.session.lastBotMessageId && ctx.chat?.id
   ) {
@@ -718,14 +760,16 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new surname:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "edit_back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
     });
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = RegistrationStep.Editing;
     ctx.session.editingStep = EditingStep.SecondNameEdition;
-    console.log(ctx.session.editingStep);
   } else if (
     data === "edit_gender" && ctx.session.lastBotMessageId && ctx.chat?.id
   ) {
@@ -736,8 +780,14 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Select your new gender:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Male", callback_data: "MALE" }, { text: "Female", callback_data: "FEMALE" }],
-          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Male", callback_data: "MALE" }, {
+            text: "Female",
+            callback_data: "FEMALE",
+          }],
+          [{ text: "Back", callback_data: "edit_back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
     });
@@ -756,7 +806,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
+            [{ text: "Back", callback_data: "edit_back" }, {
+              text: "Cancel",
+              callback_data: "cancel",
+            }],
           ],
         },
       },
@@ -774,7 +827,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const newMessage = await ctx.reply("Enter your new bio:", {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Back", callback_data: "edit_back" }, { text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "edit_back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
     });
@@ -808,10 +864,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
       ctx.chat
     ) {
-      const userContext: UserContext = createUserContext(
+      const userContext: UserContext = await createUserContext(
         ctx.state,
         ctx.session.userModel.id,
-      ) as unknown as UserContext;
+      );
       const ans: readonly number[] = [index];
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
       ctx.session.fieldCurrentIndex += 1;
