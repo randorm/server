@@ -304,7 +304,7 @@ async function askField(ctx: BotContext) {
         {
           reply_markup: {
             inline_keyboard: [
-              [],
+              [{ text: "Cancel", callback_data: "cancel" }],
             ],
           },
         },
