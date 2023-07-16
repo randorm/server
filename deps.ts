@@ -13,6 +13,7 @@ export {
   Composer,
   session,
   webhookCallback,
+  InlineKeyboard,
 } from "https://deno.land/x/grammy@v1.17.1/mod.ts";
 export { DenoKVAdapter } from "https://deno.land/x/grammy_storages/denokv/src/mod.ts";
 export type {

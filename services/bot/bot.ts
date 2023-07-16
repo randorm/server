@@ -1,4 +1,4 @@
-import { Composer } from "../../deps.ts";
+import { Composer, InlineKeyboard } from "../../deps.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
 import { difference } from "../../utils/iter.ts";
@@ -32,6 +32,12 @@ export const composer = new Composer<BotContext>();
 // TODO(Junkyyz): Split name -> name and last name. Two questions.
 
 composer.command("start", async (ctx: BotContext) => {
+  const distributionIdTemp = ctx.message?.text?.split(' ')[1];
+  if (typeof distributionIdTemp === "string") {
+    const distributionId: number = parseInt(distributionIdTemp, 10);
+    ctx.session.distributionId = distributionId;
+  }
+  console.log(ctx.session.distributionId);
   if (!ctx.from?.username) {
     await ctx.reply(
       "Oops, wait. We can't detect your @username. Please go into the settings and fix it",
@@ -93,6 +99,25 @@ composer.command("focuspocus", async (ctx: BotContext) => {
   ctx.session.userData = undefined;
   ctx.session.userModel = undefined;
   await ctx.reply("Done.");
+});
+
+composer.command("webapp", async (ctx: BotContext) => {
+  if (ctx.chat && ctx.session.distributionId) {
+    const inlineKeyboardWebApp = new InlineKeyboard().webApp(
+      "Открыть",
+      "https://randorm.com/feed/1",
+    );
+  await ctx.api.sendMessage(
+            ctx.chat.id,
+            "Let's open feed.",
+            {
+              reply_markup: inlineKeyboardWebApp,
+            },
+          );
+  }
+  else if (ctx.chat) {
+    ctx.api.sendMessage(ctx.chat.id, "Wait for the link, please");
+  }
 });
 
 async function askFirstName(ctx: BotContext) {
@@ -658,7 +683,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       "Registration was cancelled. Click /start if you remind",
     );
     // TODO(Azaki-san/Junkyyz): send gif.
-    // await ctx.api.sendAnimation(ctx.chat.id,)
+    // await ctx.api.sendAnimation(ctx.chat.id, "CgACAgIAAxkBAAJNMGS0PY_OgYECe7ZJulAXXbf5JN4XAAJLOAACPZugSdQnHqfoylCALwQ");
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = undefined;
     ctx.session.userData = undefined;
