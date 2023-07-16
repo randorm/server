@@ -11,9 +11,9 @@ export { create, verify } from "https://deno.land/x/djwt@v2.9/mod.ts";
 export {
   Bot,
   Composer,
+  InlineKeyboard,
   session,
   webhookCallback,
-  InlineKeyboard,
 } from "https://deno.land/x/grammy@v1.17.1/mod.ts";
 export { DenoKVAdapter } from "https://deno.land/x/grammy_storages/denokv/src/mod.ts";
 export type {

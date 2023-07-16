@@ -14,6 +14,7 @@ export interface SessionData {
   fieldType?: FieldType;
   currentField?: FieldModel;
   distributionId?: number;
+  answeredQuestions?: boolean;
 }
 
 export enum RegistrationStep {
