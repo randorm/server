@@ -263,12 +263,11 @@ async function editingConfirmation(ctx: BotContext) {
   const userData = getUserData(ctx);
   if (ctx.session.lastBotMessageId && ctx.chat?.id) {
     ctx.session.editingStep = EditingStep.Done;
-    const newMessage = await ctx.reply(`${userData}`, {
+    await ctx.reply(`${userData}`, {
       reply_markup: {
         inline_keyboard: keyboard,
       },
     });
-    ctx.session.lastBotMessageId = newMessage.message_id;
   }
 }
 
