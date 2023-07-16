@@ -133,7 +133,7 @@ composer.command("answer", async (ctx: BotContext) => {
           await ctx.api.editMessageText(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
-            "You are lucky (or you are a developer?), we don't have any questions for you. Try /webapp now :)",
+            "You are lucky (or you are a developer?), we don't have any questions for you. Try /feed now :)",
           );
           ctx.session.fieldStep = FieldStep.FINISH;
         }
@@ -148,7 +148,7 @@ composer.command("answer", async (ctx: BotContext) => {
   }
 });
 
-composer.command("webapp", async (ctx: BotContext) => {
+composer.command("feed", async (ctx: BotContext) => {
   if (ctx.chat && ctx.session.distributionId) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
       "Открыть",
@@ -221,8 +221,8 @@ async function askGender(ctx: BotContext) {
   const newMessage = await ctx.reply("What's your gender?", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Male👦", callback_data: "MALE" }, {
-          text: "Female👧",
+        [{ text: "Male 👦", callback_data: "MALE" }, {
+          text: "Female 👧",
           callback_data: "FEMALE",
         }],
         [{ text: "Back", callback_data: "back" }, {
@@ -293,8 +293,18 @@ async function askBio(ctx: BotContext) {
 async function askField(ctx: BotContext) {
   if (
     ctx.session.fieldsIds !== undefined &&
-    ctx.session.fieldCurrentIndex !== undefined
+    ctx.session.fieldCurrentIndex !== undefined && ctx.chat && ctx.session.lastBotMessageId
   ) {
+    await ctx.api.editMessageReplyMarkup(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+      {
+        reply_markup: {
+          inline_keyboard: [
+          ],
+        },
+      },
+    );
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = await field(ctx.state, {
@@ -598,7 +608,7 @@ composer.on("message", async (ctx: BotContext) => {
     ctx.session.fieldCurrentIndex += 1;
     if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
       const newMessage = await ctx.reply(
-        "Yooo congratulations, you finished! Now use /webapp",
+        "Yooo congratulations, you finished! Now use /feed",
       );
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldStep = FieldStep.FINISH;
@@ -671,8 +681,8 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Male👦", callback_data: "MALE" }, {
-                  text: "Female👧",
+                [{ text: "Male 👦", callback_data: "MALE" }, {
+                  text: "Female 👧",
                   callback_data: "FEMALE",
                 }],
                 [{ text: "Back", callback_data: "back" }, {
@@ -802,7 +812,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           await ctx.api.editMessageText(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
-            "Confirmed! Now you are registered, but need to answer some additional questions. Use /now when you are ready",
+            "Confirmed! Now you are registered, but need to answer some additional questions. Use /answer when you are ready",
           );
         } else {
           await ctx.api.editMessageText(
@@ -1004,11 +1014,13 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const currentField: FieldModel = ctx.session.currentField;
     const options: readonly string[] = currentField.options;
     let index = -1;
+    console.log(options);
     for (let i = 0; i < options.length; i++) {
       if (data === options[i]) {
         index = i;
       }
     }
+    console.log(index, data);
     if (
       index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
       ctx.chat
@@ -1021,7 +1033,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
       ctx.session.fieldCurrentIndex += 1;
       if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
-        await ctx.reply("Yooo congratulations, you finished! Now use /webapp")
+        await ctx.reply("Yooo congratulations, you finished! Now use /feed")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
       } else {
