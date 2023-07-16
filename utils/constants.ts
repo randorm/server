@@ -13,3 +13,5 @@ export const STORAGE_VERSION = "0.2.0";
 export const STORAGE_BATCH_SIZE = 10;
 
 export const PORT = 3000;
+
+// export const CANCEL_GIF_ID = 
