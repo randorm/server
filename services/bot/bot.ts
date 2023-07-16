@@ -11,6 +11,7 @@ import {
   createUser,
   updateUserProfile,
   userDistributionsIds,
+  userFieldIds,
 } from "../database/operation/user.ts";
 import { distributionFieldIds } from "../database/operation/distribution.ts";
 import {
@@ -101,21 +102,20 @@ composer.command("answer", async (ctx: BotContext) => {
         typeof userContext === "object" && userContext !== null &&
         ctx.session.distributionId !== undefined
       ) {
-        const answeredIds: Set<number> = await distributionFieldIds(
+        const allFieldsIds: Set<number> = await distributionFieldIds(
           ctx.state,
           { distributionId: ctx.session.distributionId },
         );
-        const allFields: FieldModel[] = await fields(
-          ctx.state,
+        console.log(allFieldsIds);
+        const answeredIds: Set<number> = await userFieldIds(
+          userContext,
         );
-        const allFieldsIds: Set<number> = new Set();
-        for (let i = 0; i < allFields.length; i++) {
-          allFieldsIds.add(allFields[i].id);
-        }
+        console.log(answeredIds);
         const needToAnswerFieldIds: Set<number> = difference<number>(
           answeredIds,
           allFieldsIds,
         );
+        console.log(needToAnswerFieldIds);
         ctx.session.fieldsIds = [...needToAnswerFieldIds];
         ctx.session.fieldAmount = ctx.session.fieldsIds.length;
 
