@@ -1,5 +1,13 @@
-import { Application, Bot, oakCors, webhookCallback } from "./deps.ts";
+import {
+  Application,
+  Bot,
+  DenoKVAdapter,
+  oakCors,
+  session,
+  webhookCallback,
+} from "./deps.ts";
 import { router } from "./routes/mod.ts";
+import type { SessionData } from "./services/bot/mod.ts";
 import { composer } from "./services/bot/mod.ts";
 import type { BotContext, ServerContext } from "./types.ts";
 import {
@@ -9,7 +17,6 @@ import {
   STORAGE_KEY_GROUPS,
   STORAGE_VERSION,
 } from "./utils/mod.ts";
-
 
 // Step 1.1. Create a connection to the database.
 
@@ -35,9 +42,15 @@ const bot = new Bot<BotContext>(BOT_TOKEN);
 
 ////////////////////////////////////////////////////////////////
 
-// Step 3. Create a webhook callback.
+// Step 3.1. Create a webhook callback.
 
 const webhook = webhookCallback(bot, "oak");
+
+// Step 3.2. Create a session middleware.
+
+const sessionMiddleware = session<SessionData, BotContext>({
+  storage: new DenoKVAdapter(kv),
+});
 
 ////////////////////////////////////////////////////////////////
 
@@ -77,7 +90,11 @@ const state: ServerContext = {
 
 bot.use(setupState(state));
 
-// Step 6.2. Register bot handlers.
+// Step 6.3. Register session middleware.
+
+bot.use(sessionMiddleware);
+
+// Step 6.3. Register bot handlers.
 
 bot.use(composer);
 

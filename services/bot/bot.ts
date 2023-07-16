@@ -1,20 +1,12 @@
-import { Composer, session } from "../../deps.ts";
-import {
-  FieldModel,
-  FieldType,
-  Gender,
-  ProfileModel,
-  UserContext,
-} from "./mod.ts";
+import { Composer } from "../../deps.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
+import { difference } from "../../utils/iter.ts";
 import {
-  EditingStep,
-  FieldStep,
-  RegistrationStep,
-  SessionData,
-} from "./types.ts";
-import { DenoKVAdapter } from "../../deps.ts";
+  setChoiceAnswer,
+  setTextAnswer,
+} from "../database/operation/answer.ts";
+import { field, fields } from "../database/operation/field.ts";
 import {
   createUser,
   updateUserProfile,
@@ -22,24 +14,19 @@ import {
   userFieldIds,
 } from "../database/operation/user.ts";
 import {
-  setChoiceAnswer,
-  setTextAnswer,
-} from "../database/operation/answer.ts";
-import { difference } from "../../utils/iter.ts";
-import { isValidDate } from "./tools/validDateTemp.ts";
+  FieldModel,
+  FieldType,
+  Gender,
+  ProfileModel,
+  UserContext,
+} from "./mod.ts";
 import { makeInlineKeyboard } from "./tools/InlineKeyboardMaker.ts";
 import { createUserContext } from "./tools/authentificate.ts";
-import { field, fields } from "../database/operation/field.ts";
+import { isValidDate } from "./tools/validDateTemp.ts";
+import { EditingStep, FieldStep, RegistrationStep } from "./types.ts";
 
 export const composer = new Composer<BotContext>();
-const kv = await Deno.openKv("./services/bot/kv.db");
 
-const sessionMiddleware = session<SessionData, BotContext>({
-  initial: () => ({}),
-  storage: new DenoKVAdapter(kv),
-});
-
-composer.use(sessionMiddleware);
 // TODO(Junkyyz): validation (name, surname, age -> birthday, bio, etc.) Including validation for answers (from fields)
 // TODO(Junkyyz): database -> assert -> [user / field / answer]
 // TODO(Junkyyz): Split name -> name and last name. Two questions.
