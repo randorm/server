@@ -84,7 +84,7 @@ composer.command("focuspocus", async (ctx: BotContext) => {
 composer.command("answer", async (ctx: BotContext) => {
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     const newMessage = await ctx.reply("Let's start answering the questions :)");
-    ctx.session.lastBotMessageId = newMessage.id;
+    ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.fieldStep = FieldStep.PROCESS;
     ctx.session.fieldCurrentIndex = 0;
     if (
@@ -138,7 +138,7 @@ composer.command("answer", async (ctx: BotContext) => {
           ctx.session.fieldStep = FieldStep.FINISH;
         }
       } else {
-        // TODO(Junkyyz): Write error.
+        await ctx.reply("We have problems on server side.");
       }
     }
   } else {
