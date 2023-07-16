@@ -13,7 +13,7 @@ import {
   userDistributionsIds,
   userFieldIds,
 } from "../database/operation/user.ts";
-import { distributionFieldIds } from "../database/operation/distribution.ts";
+import { distributionFieldIds, joinDistribution } from "../database/operation/distribution.ts";
 import {
   FieldModel,
   FieldType,
@@ -149,7 +149,7 @@ composer.command("answer", async (ctx: BotContext) => {
 });
 
 composer.command("feed", async (ctx: BotContext) => {
-  if (ctx.chat && ctx.session.distributionId) {
+  if (ctx.chat && ctx.session.distributionId !== undefined) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
       "Открыть",
       "https://randorm.com/feed/1",
@@ -298,12 +298,6 @@ async function askField(ctx: BotContext) {
     await ctx.api.editMessageReplyMarkup(
       ctx.chat.id,
       ctx.session.lastBotMessageId,
-      {
-        reply_markup: {
-          inline_keyboard: [
-          ],
-        },
-      },
     );
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
@@ -606,10 +600,11 @@ composer.on("message", async (ctx: BotContext) => {
       value: ctx.message?.text,
     });
     ctx.session.fieldCurrentIndex += 1;
-    if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
+    if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
       );
+      joinDistribution(userContext, { distributionId: ctx.session.distributionId });
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldStep = FieldStep.FINISH;
       ctx.session.answeredQuestions = true;
@@ -1032,10 +1027,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       const ans: readonly number[] = [index];
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
       ctx.session.fieldCurrentIndex += 1;
-      if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
+      if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
         await ctx.reply("Yooo congratulations, you finished! Now use /feed")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
+        joinDistribution(userContext, { distributionId: ctx.session.distributionId });
       } else {
         askField(ctx);
       }
