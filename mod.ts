@@ -130,5 +130,6 @@ const WEBHOOK_URL = new URL("/bot", ORIGIN);
 
 await Promise.all([
   app.listen({ port: PORT }),
-  bot.api.setWebhook(WEBHOOK_URL.toString()),
+  // bot.api.setWebhook(WEBHOOK_URL.toString()),
+  bot.start(),
 ]);
