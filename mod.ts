@@ -11,6 +11,18 @@ import {
 } from "./utils/mod.ts";
 
 
+Deno.env.set("BOT_TOKEN", "1786952895:AAHY7ZdGvly2ygQT3EQIFztPyen4c-EcwiY");
+const a = await crypto.subtle.generateKey(
+  { name: "HMAC", hash: "SHA-512" },
+  true,
+  ["sign", "verify"],
+);
+
+const b = await crypto.subtle.exportKey("jwk", a);
+
+Deno.env.set("JWK", JSON.stringify(b));
+Deno.env.set("ORIGIN", "https://api.randorm.com");
+
 // Step 1.1. Create a connection to the database.
 
 const kv = await Deno.openKv();

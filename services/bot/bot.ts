@@ -211,8 +211,7 @@ function getUserData(ctx: BotContext): string {
 Surname: ${ctx.session.userData?.surname}
 Gender: ${ctx.session.userData?.gender?.toString()}
 Date of birthday: ${ctx.session.userData?.birthday}
-Bio: ${ctx.session.userData?.bio}\n
-`;
+Bio: ${ctx.session.userData?.bio}`;
   return s;
 }
 
