@@ -301,6 +301,13 @@ async function askField(ctx: BotContext) {
       await ctx.api.editMessageReplyMarkup(
         ctx.chat.id,
         ctx.session.lastBotMessageId,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [],
+            ],
+          },
+        },
       );
     }
 
