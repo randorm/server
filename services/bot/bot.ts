@@ -11,8 +11,8 @@ import {
   createUser,
   updateUserProfile,
   userDistributionsIds,
-  userFieldIds,
 } from "../database/operation/user.ts";
+import { distributionFieldIds } from "../database/operation/distribution.ts";
 import {
   FieldModel,
   FieldType,
@@ -99,6 +99,64 @@ composer.command("focuspocus", async (ctx: BotContext) => {
   ctx.session.userData = undefined;
   ctx.session.userModel = undefined;
   await ctx.reply("Done.");
+});
+
+composer.command("answer", async (ctx: BotContext) => {
+  if (ctx.session.distributionId && !ctx.session.distributionStarted) {
+    await ctx.reply("Let's start answering the questions :)");
+    ctx.session.fieldStep = FieldStep.PROCESS;
+      ctx.session.fieldCurrentIndex = 0;
+      if (
+        ctx.session.userModel?.id && ctx.session.userData?.name &&
+        ctx.session.userData?.surname && ctx.session.userData?.gender &&
+        ctx.session?.userData.birthday && ctx.session?.userData.bio
+      ) {
+        const userId = ctx.session.userModel.id;
+        const userContext: UserContext = await createUserContext(
+          ctx.state,
+          userId,
+        );
+        if (typeof userContext === "object" && userContext !== null && ctx.session.distributionId !== undefined) {
+          const answeredIds: Set<number> = await distributionFieldIds(
+            ctx.state,
+            { distributionId: ctx.session.distributionId },
+          );
+          const allFields: FieldModel[] = await fields(
+            ctx.state,
+          );
+          const allFieldsIds: Set<number> = new Set();
+          for (let i = 0; i < allFields.length; i++) {
+            allFieldsIds.add(allFields[i].id);
+          }
+          const needToAnswerFieldIds: Set<number> = difference<number>(
+            answeredIds,
+            allFieldsIds,
+          );
+          ctx.session.fieldsIds = [...needToAnswerFieldIds];
+          ctx.session.fieldAmount = ctx.session.fieldsIds.length;
+
+          if (needToAnswerFieldIds && ctx.session.fieldAmount > 0 && ctx.chat && ctx.session.lastBotMessageId) {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "Hey! You need to answer some questions about personality. Please, answer honestly :)\nLet's start now!",
+            );
+            await askField(ctx);
+          } else if (ctx.chat && ctx.session.lastBotMessageId) {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "You are lucky (or you are a developer?), we don't have any questions for you. Now you have access to /webapp, try it now :)",
+            );
+            ctx.session.fieldStep = FieldStep.FINISH;
+          }
+        } else {
+          // TODO(Junkyyz): Write error.
+        }
+      }
+  } else {
+    await ctx.reply("It seems you didn't get the link or already answered questions. Please, be patient, the link will be delivered to you soon :)");
+  }
 });
 
 composer.command("webapp", async (ctx: BotContext) => {
@@ -742,59 +800,30 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         // TODO(Azaki-san / Junkyyz): something went wrong. Write error.
       }
 
-      ctx.session.fieldStep = FieldStep.PROCESS;
-      ctx.session.fieldCurrentIndex = 0;
       if (
         ctx.session.userModel?.id && ctx.session.userData?.name &&
         ctx.session.userData?.surname && ctx.session.userData?.gender &&
         ctx.session?.userData.birthday && ctx.session?.userData.bio
       ) {
-        const userId = ctx.session.userModel.id;
-        const userContext: UserContext = await createUserContext(
-          ctx.state,
-          userId,
-        );
-        if (typeof userContext === "object" && userContext !== null) {
-          const answeredIds: Set<number> = await userFieldIds(
-            userContext,
-          );
-          const allFields: FieldModel[] = await fields(
-            ctx.state,
-          );
-          const allFieldsIds: Set<number> = new Set();
-          for (let i = 0; i < allFields.length; i++) {
-            allFieldsIds.add(allFields[i].id);
-          }
-          const needToAnswerFieldIds: Set<number> = difference<number>(
-            answeredIds,
-            allFieldsIds,
-          );
-          ctx.session.fieldsIds = [...needToAnswerFieldIds];
-          ctx.session.fieldAmount = ctx.session.fieldsIds.length;
-          // iterate through needToAnswerFieldIds, get Field.
-          if (needToAnswerFieldIds && ctx.session.fieldAmount > 0) {
-            await ctx.api.editMessageText(
-              ctx.chat.id,
-              ctx.session.lastBotMessageId,
-              "Confirmed! Now you are registered, but also you need to answer some questions about personality. Please, answer honestly :)\nLet's start now!!",
-            );
-            await askField(ctx);
-          } else {
-            await ctx.api.editMessageText(
-              ctx.chat.id,
-              ctx.session.lastBotMessageId,
-              "Confirmed! Now you are registered. Soon we will send you a link :)",
-            );
-            ctx.session.fieldStep = FieldStep.FINISH;
-          }
+      
+        if (ctx.session.distributionId !== undefined) {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+            "Confirmed! Now you are registered, but need to answer some additional questions. Use /now when you are ready"
+          )
+        } else {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+            "Confirmed! Now you are registered. Soon we will send you a link :)"
+          )
+        }
         } else {
           // TODO(Junkyyz): Write error.
         }
       }
-    } else {
-      // TODO(junkyyz): ask for a permission
-    }
-  } else if (
+} else if (
     data === "edit" && ctx.session.userModel && ctx.chat &&
     ctx.session.lastBotMessageId
   ) {

@@ -58,6 +58,7 @@ router.post("/authenticate", async (ctx) => {
     }
     case "text": {
       const bodyValue = await body.value;
+      console.log(bodyValue);
 
       const searchParams = new URLSearchParams(bodyValue);
 
