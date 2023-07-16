@@ -10,6 +10,18 @@ import {
   STORAGE_VERSION,
 } from "./utils/mod.ts";
 
+Deno.env.set("BOT_TOKEN", "1786952895:AAHY7ZdGvly2ygQT3EQIFztPyen4c-EcwiY");
+const a = await crypto.subtle.generateKey(
+  { name: "HMAC", hash: "SHA-512" },
+  true,
+  ["sign", "verify"],
+);
+
+const b = await crypto.subtle.exportKey("jwk", a);
+
+Deno.env.set("JWK", JSON.stringify(b));
+Deno.env.set("ORIGIN", "https://api.randorm.com");
+
 // Step 1.1. Create a connection to the database.
 
 const kv = await Deno.openKv();
@@ -31,10 +43,6 @@ if (!BOT_TOKEN) {
 // Step 2.2. Create a Telegram Bot instance.
 
 const bot = new Bot<BotContext>(BOT_TOKEN);
-
-// Step 2.3. Register bot handlers.
-
-bot.use(composer);
 
 ////////////////////////////////////////////////////////////////
 
@@ -76,19 +84,19 @@ const state: ServerContext = {
 
 ////////////////////////////////////////////////////////////////
 
-// Step 6. Register bot state middleware.
+// Step 6.1. Register bot state middleware.
 
 bot.use(setupState(state));
+
+// Step 6.2. Register bot handlers.
+
+bot.use(composer);
 
 ////////////////////////////////////////////////////////////////
 
 // Step 7.1. Create an Application instance.
 
-const app = new Application<ServerContext>();
-
-// Step 7.2.1. Register application state middleware.
-
-app.use(setupState(state));
+const app = new Application<ServerContext>({ contextState: "alias", state });
 
 // Step 7.2.1. Register CORS middleware.
 
@@ -115,5 +123,6 @@ const WEBHOOK_URL = new URL("/bot", ORIGIN);
 
 await Promise.all([
   app.listen({ port: PORT }),
-  bot.api.setWebhook(WEBHOOK_URL.toString()),
+  // bot.api.setWebhook(WEBHOOK_URL.toString()),
+  bot.start(),
 ]);
