@@ -91,6 +91,7 @@ composer.command("profile", async (ctx: BotContext) => {
 composer.command("focuspocus", async (ctx: BotContext) => {
   ctx.session.registrationStep = undefined;
   ctx.session.userData = undefined;
+  ctx.session.userModel = undefined;
   await ctx.reply("Done.");
 });
 
