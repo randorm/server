@@ -34,19 +34,28 @@ export const composer = new Composer<BotContext>();
 composer.command("start", async (ctx: BotContext) => {
   if (!ctx.from?.username) {
     await ctx.reply(
-      "*Hey hey\\! Before starting using the bot, please add your alias \\(username\\) in the telegram profile settings\\.*",
-      { parse_mode: "MarkdownV2" },
+      "Oops, wait. We can't detect your @username. Please go into the settings and fix it",
     );
   } else if (ctx.session.registrationStep !== RegistrationStep.Finish) {
     const newMessage = await ctx.reply(
-      "*Welcome to the _Randorm_\\ \\- the place where you will find your best roommates\\.\nLet's register you in the bot \\=\\)*",
-      { parse_mode: "MarkdownV2" },
+      "Hi, here we will help you to find the perfect roommates.",
+      { parse_mode: "Markdown" },
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
     await askFirstName(ctx);
   } else {
+    const userData = getUserData(ctx);
+    const keyboard = [
+      [{ text: "Edit Info", callback_data: "edit" }],
+    ];
+
     const newMessage = await ctx.reply(
-      "You are already registered. Use /profile :)",
+      `Hi, hi, hi! Is something wrong?\n${userData}`,
+      {
+        reply_markup: {
+          inline_keyboard: keyboard,
+        },
+      },
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
   }
@@ -77,16 +86,25 @@ composer.command("profile", async (ctx: BotContext) => {
   }
 });
 
+composer.command("focuspocus", async (ctx: BotContext) => {
+  ctx.session.registrationStep = undefined;
+  ctx.session.userData = undefined;
+  await ctx.reply("Done.");
+});
+
 async function askFirstName(ctx: BotContext) {
+  await ctx.reply(
+    "Let's get to know each other. My name is Randorm, what's yours?",
+  );
   const newMessage = await ctx.reply(
-    "Enter your name like _Name_",
+    "Enter your first name like __Ivan__",
     {
       reply_markup: {
         inline_keyboard: [
           [{ text: "Cancel", callback_data: "cancel" }],
         ],
       },
-      parse_mode: "MarkdownV2",
+      parse_mode: "Markdown",
     },
   );
   ctx.session.lastBotMessageId = newMessage.message_id;
@@ -94,15 +112,21 @@ async function askFirstName(ctx: BotContext) {
 }
 
 async function askSecondName(ctx: BotContext) {
+  if (ctx.chat?.id && ctx.session.lastBotMessageId) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
+  }
   const newMessage = await ctx.reply(
-    "Enter your surname like _Surname_",
+    "Enter your last name like __Ivanov__",
     {
       reply_markup: {
         inline_keyboard: [
           [{ text: "Cancel", callback_data: "cancel" }],
         ],
       },
-      parse_mode: "MarkdownV2",
+      parse_mode: "Markdown",
     },
   );
   ctx.session.lastBotMessageId = newMessage.message_id;
@@ -111,11 +135,17 @@ async function askSecondName(ctx: BotContext) {
 }
 
 async function askGender(ctx: BotContext) {
-  const newMessage = await ctx.reply("Please, select your gender.", {
+  if (ctx.chat?.id && ctx.session.lastBotMessageId) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
+  }
+  const newMessage = await ctx.reply("What's your gender?", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Male", callback_data: "MALE" }, {
-          text: "Female",
+        [{ text: "Male👦", callback_data: "MALE" }, {
+          text: "Female👧",
           callback_data: "FEMALE",
         }],
         [{ text: "Back", callback_data: "back" }, {
@@ -124,6 +154,7 @@ async function askGender(ctx: BotContext) {
         }],
       ],
     },
+    parse_mode: "Markdown",
   });
   ctx.session.lastBotMessageId = newMessage.message_id;
   ctx.session.registrationStep = RegistrationStep.Gender;
@@ -131,8 +162,14 @@ async function askGender(ctx: BotContext) {
 }
 
 async function askBirthday(ctx: BotContext) {
+  if (ctx.chat?.id && ctx.session.lastBotMessageId) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
+  }
   const newMessage = await ctx.reply(
-    "Enter your date of birthday (YYYY-MM-DD).",
+    "When's your birthday? ||(DD.MM.YYYY)||",
     {
       reply_markup: {
         inline_keyboard: [
@@ -142,6 +179,7 @@ async function askBirthday(ctx: BotContext) {
           }],
         ],
       },
+      parse_mode: "Markdown",
     },
   );
   ctx.session.lastBotMessageId = newMessage.message_id;
@@ -150,16 +188,26 @@ async function askBirthday(ctx: BotContext) {
 }
 
 async function askBio(ctx: BotContext) {
-  const newMessage = await ctx.reply("Enter your bio (a few sentences).", {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "Back", callback_data: "back" }, {
-          text: "Cancel",
-          callback_data: "cancel",
-        }],
-      ],
+  if (ctx.chat?.id && ctx.session.lastBotMessageId) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
+  }
+  const newMessage = await ctx.reply(
+    "Tell us briefly about yourself ||(256 characters)||",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Back", callback_data: "back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
+        ],
+      },
+      parse_mode: "Markdown",
     },
-  });
+  );
   ctx.session.lastBotMessageId = newMessage.message_id;
   ctx.session.registrationStep = RegistrationStep.Bio;
   ctx.session.previousStep = ctx.session.registrationStep - 1;
@@ -194,11 +242,11 @@ async function askField(ctx: BotContext) {
 }
 
 function getUserData(ctx: BotContext): string {
-  const s = `Name: ${ctx.session.userData?.name}
-Surname: ${ctx.session.userData?.surname}
-Gender: ${ctx.session.userData?.gender?.toString()}
-Date of birthday: ${ctx.session.userData?.birthday}
-Bio: ${ctx.session.userData?.bio}`;
+  const s =
+    `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}.
+You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}.
+You are known as a person who:
+${ctx.session.userData?.bio}`;
   return s;
 }
 
@@ -355,7 +403,8 @@ composer.on("message", async (ctx: BotContext) => {
     }
   } else if (step == RegistrationStep.FirstName) {
     const name = ctx.message?.text?.split(" ");
-    if (name?.length == 1) {
+    //TODO(Junkyyz): validation
+    if (name?.length == 128) {
       ctx.session.userData = {
         name: name[0],
       };
@@ -371,7 +420,8 @@ composer.on("message", async (ctx: BotContext) => {
     }
   } else if (step == RegistrationStep.SecondName) {
     const nameSurname = ctx.message?.text?.split(" ");
-    if (nameSurname?.length == 1 && ctx.session.userData) {
+    //TODO(Junkyyz): validation!!!
+    if (nameSurname?.length == 128 && ctx.session.userData) {
       ctx.session.userData.surname = nameSurname[0];
       await askGender(ctx);
     } else {
@@ -414,20 +464,8 @@ composer.on("message", async (ctx: BotContext) => {
     ctx.session.userData.bio = ctx.message?.text;
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.previousStep = RegistrationStep.Bio;
-    const s = getUserData(ctx);
     const newMessage = await ctx.reply(
-      `Your information profile:\n${s}Confirm?`,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "Confirm", callback_data: "confirm" }],
-            [{ text: "Back", callback_data: "back" }, {
-              text: "Cancel",
-              callback_data: "cancel",
-            }],
-          ],
-        },
-      },
+      `Nice to meet you, ${ctx.session.userData.name}!`,
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (
@@ -728,7 +766,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         inline_keyboard: [
           [{ text: "Back", callback_data: "edit_back" }, {
             text: "Cancel",
-            callback_data: "cancel",
+            callback_data: "cancel_back",
           }],
         ],
       },
@@ -748,7 +786,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         inline_keyboard: [
           [{ text: "Back", callback_data: "edit_back" }, {
             text: "Cancel",
-            callback_data: "cancel",
+            callback_data: "cancel_back",
           }],
         ],
       },
@@ -772,7 +810,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           }],
           [{ text: "Back", callback_data: "edit_back" }, {
             text: "Cancel",
-            callback_data: "cancel",
+            callback_data: "cancel_back",
           }],
         ],
       },
@@ -794,7 +832,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           inline_keyboard: [
             [{ text: "Back", callback_data: "edit_back" }, {
               text: "Cancel",
-              callback_data: "cancel",
+              callback_data: "cancel_back",
             }],
           ],
         },
@@ -815,7 +853,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         inline_keyboard: [
           [{ text: "Back", callback_data: "edit_back" }, {
             text: "Cancel",
-            callback_data: "cancel",
+            callback_data: "cancel_back",
           }],
         ],
       },
