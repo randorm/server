@@ -12,7 +12,6 @@ export interface SessionData {
   fieldCurrentIndex?: number;
   fieldsIds?: number[];
   fieldType?: FieldType;
-  currentField?: FieldModel;
   distributionId?: number;
   answeredQuestions?: boolean;
 }

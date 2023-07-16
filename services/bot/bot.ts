@@ -81,6 +81,7 @@ composer.command("focuspocus", async (ctx: BotContext) => {
   ctx.session.userModel = undefined;
   ctx.session.answeredQuestions = undefined;
   ctx.session.fieldStep = undefined;
+  ctx.session.fieldsIds = undefined;
   await ctx.reply("Done.");
 });
 
@@ -304,15 +305,14 @@ async function askField(ctx: BotContext) {
     const currentField: FieldModel = await field(ctx.state, {
       fieldId: currentFieldId,
     });
-    ctx.session.currentField = currentField;
     if (currentField.type === FieldType.TEXT) {
-      const newMessage = await ctx.reply(ctx.session.currentField.question);
+      const newMessage = await ctx.reply(currentField.question);
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldType = FieldType.TEXT;
       ctx.session.lastBotMessageId = newMessage.message_id;
     } else if (currentField.type === FieldType.CHOICE) {
       const options: readonly string[] = currentField.options;
-      const newMessage = await ctx.reply(ctx.session.currentField.question, {
+      const newMessage = await ctx.reply(currentField.question, {
         reply_markup: {
           inline_keyboard: makeInlineKeyboard(options),
         },
@@ -606,7 +606,7 @@ composer.on("message", async (ctx: BotContext) => {
     //     reply_markup: undefined,
     //   },
     // );
-    if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
+    if (ctx.session.fieldsIds.length === 1 && ctx.session.distributionId !== undefined) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
       );
@@ -1007,15 +1007,17 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
 
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (
-    ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.currentField &&
-    ctx.session.currentField.type == FieldType.CHOICE &&
+    ctx.session.fieldStep === FieldStep.PROCESS &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined
   ) {
     const currentFieldId: number =
-      ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+    ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+  const currentField: FieldModel = await field(ctx.state, {
+    fieldId: currentFieldId,
+  });
+  if (currentField.type === FieldType.CHOICE) {
       console.log(ctx.session.fieldsIds);
       console.log(ctx.session.fieldCurrentIndex);
-    const currentField: FieldModel = ctx.session.currentField;
     console.log(currentField);
     const options: readonly string[] = currentField.options;
     let index = -1;
@@ -1053,6 +1055,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         ctx.session.fieldsIds.shift();
         askField(ctx);
       }
+    }
     } else {
       // TODO(Azaki-san/Junkyyz): Error Message.
     }
