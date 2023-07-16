@@ -297,15 +297,7 @@ async function askField(ctx: BotContext) {
     ctx.session.fieldsIds !== undefined &&
     ctx.session.fieldCurrentIndex !== undefined && ctx.chat && ctx.session.lastBotMessageId
   ) {
-    if (ctx.session.fieldCurrentIndex !== 0) {
-      await ctx.api.editMessageReplyMarkup(
-        ctx.chat.id,
-        ctx.session.lastBotMessageId,
-        {
-          reply_markup: undefined,
-        },
-      );
-    }
+
 
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
@@ -597,7 +589,7 @@ composer.on("message", async (ctx: BotContext) => {
   } else if (
     ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
-    ctx.message?.text
+    ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId
   ) {
     const userContext: UserContext = await createUserContext(
       ctx.state,
@@ -607,7 +599,13 @@ composer.on("message", async (ctx: BotContext) => {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
     });
-    ctx.session.fieldCurrentIndex += 1;
+    await ctx.api.editMessageReplyMarkup(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+      {
+        reply_markup: undefined,
+      },
+    );
     if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
@@ -617,6 +615,7 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.session.fieldStep = FieldStep.FINISH;
       ctx.session.answeredQuestions = true;
     } else {
+      ctx.session.fieldsIds.shift();
       askField(ctx);
     }
   }
@@ -1037,13 +1036,20 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       );
       const ans: readonly number[] = [index];
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
-      ctx.session.fieldCurrentIndex += 1;
+      await ctx.api.editMessageReplyMarkup(
+        ctx.chat.id,
+        ctx.session.lastBotMessageId,
+        {
+          reply_markup: undefined,
+        },
+      );
       if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount && ctx.session.distributionId !== undefined) {
         await ctx.reply("Yooo congratulations, you finished! Now use /feed")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
         joinDistribution(userContext, { distributionId: ctx.session.distributionId });
       } else {
+        ctx.session.fieldsIds.shift();
         askField(ctx);
       }
     } else {
