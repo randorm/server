@@ -599,13 +599,6 @@ composer.on("message", async (ctx: BotContext) => {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
     });
-    await ctx.api.editMessageReplyMarkup(
-      ctx.chat.id,
-      ctx.session.lastBotMessageId,
-      {
-        reply_markup: undefined,
-      },
-    );
     if (ctx.session.fieldsIds.length <= 1 && ctx.session.distributionId !== undefined) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
