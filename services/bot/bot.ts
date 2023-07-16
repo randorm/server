@@ -295,10 +295,13 @@ async function askField(ctx: BotContext) {
     ctx.session.fieldsIds !== undefined &&
     ctx.session.fieldCurrentIndex !== undefined && ctx.chat && ctx.session.lastBotMessageId
   ) {
-    await ctx.api.editMessageReplyMarkup(
-      ctx.chat.id,
-      ctx.session.lastBotMessageId,
-    );
+    if (ctx.session.fieldCurrentIndex !== 0) {
+      await ctx.api.editMessageReplyMarkup(
+        ctx.chat.id,
+        ctx.session.lastBotMessageId,
+      );
+    }
+
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = await field(ctx.state, {
