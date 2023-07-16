@@ -36,7 +36,10 @@ composer.command("start", async (ctx: BotContext) => {
     await ctx.reply(
       "Oops, wait. We can't detect your @username. Please go into the settings and fix it",
     );
-  } else if (ctx.session.registrationStep !== RegistrationStep.Finish) {
+  } else if (
+    ctx.session.registrationStep !== RegistrationStep.Finish &&
+    !ctx.session.userModel
+  ) {
     const newMessage = await ctx.reply(
       "Hi, here we will help you to find the perfect roommates",
       { parse_mode: "Markdown" },
@@ -122,7 +125,10 @@ async function askSecondName(ctx: BotContext) {
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Cancel", callback_data: "cancel" }],
+          [{ text: "Back", callback_data: "back" }, {
+            text: "Cancel",
+            callback_data: "cancel",
+          }],
         ],
       },
       parse_mode: "Markdown",
@@ -255,10 +261,6 @@ async function editingConfirmation(ctx: BotContext) {
   ];
   const userData = getUserData(ctx);
   if (ctx.session.lastBotMessageId && ctx.chat?.id) {
-    await ctx.api.deleteMessage(
-      ctx.chat.id,
-      ctx.session.lastBotMessageId,
-    );
     ctx.session.editingStep = EditingStep.Done;
     const newMessage = await ctx.reply(`${userData}`, {
       reply_markup: {
@@ -289,7 +291,7 @@ async function editingBack(ctx: BotContext) {
         reply_markup: {
           inline_keyboard: [
             [{ text: "First Name", callback_data: "edit_FirstName" }],
-            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Last Name", callback_data: "edit_SecondName" }],
             [{ text: "Birthday", callback_data: "edit_birthday" }],
             [{ text: "Bio", callback_data: "edit_bio" }],
             [{ text: "Back", callback_data: "cancel_back" }],
@@ -302,7 +304,7 @@ async function editingBack(ctx: BotContext) {
         reply_markup: {
           inline_keyboard: [
             [{ text: "First Name", callback_data: "edit_FirstName" }],
-            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Last Name", callback_data: "edit_SecondName" }],
             [{ text: "Gender", callback_data: "edit_gender" }],
             [{ text: "Birthday", callback_data: "edit_birthday" }],
             [{ text: "Bio", callback_data: "edit_bio" }],
@@ -327,10 +329,14 @@ composer.on("message", async (ctx: BotContext) => {
         step2 == EditingStep.FirstNameEdition && ctx.session.lastBotMessageId
       ) {
         const name = ctx.message?.text;
-        if (ctx.session.userData) {
+        if (ctx.session.userData && ctx.chat) {
+          await ctx.api.deleteMessage(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+          );
           ctx.session.userData.name = name;
-          editingConfirmation(ctx);
           const newMessage = await ctx.reply("Successfully edited!");
+          editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
           ctx.session.editingStep = EditingStep.Done;
           ctx.session.registrationStep = RegistrationStep.Finish;
@@ -342,10 +348,14 @@ composer.on("message", async (ctx: BotContext) => {
         step2 == EditingStep.SecondNameEdition && ctx.session.lastBotMessageId
       ) {
         const name = ctx.message?.text;
-        if (ctx.session.userData) {
+        if (ctx.session.userData && ctx.chat) {
+          await ctx.api.deleteMessage(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+          );
           ctx.session.userData.surname = name;
-          editingConfirmation(ctx);
           const newMessage = await ctx.reply("Successfully edited!");
+          editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
           ctx.session.editingStep = EditingStep.Done;
           ctx.session.registrationStep = RegistrationStep.Finish;
@@ -354,10 +364,17 @@ composer.on("message", async (ctx: BotContext) => {
         }
       } else if (step2 == EditingStep.BirthdayEdition) {
         const birthday = ctx.message?.text ? ctx.message?.text : "";
-        if (isValidDate(birthday) && ctx.session.userData) {
+        if (
+          isValidDate(birthday) && ctx.session.userData && ctx.chat &&
+          ctx.session.lastBotMessageId
+        ) {
+          await ctx.api.deleteMessage(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
+          );
           ctx.session.userData.birthday = birthday;
-          editingConfirmation(ctx);
           const newMessage = await ctx.reply("Successfully edited!");
+          editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
           ctx.session.editingStep = EditingStep.Done;
           ctx.session.registrationStep = RegistrationStep.Finish;
@@ -367,10 +384,17 @@ composer.on("message", async (ctx: BotContext) => {
           );
           ctx.session.lastBotMessageId = newMessage.message_id;
         }
-      } else if (step2 == EditingStep.BioEdition && ctx.session.userData) {
+      } else if (
+        step2 == EditingStep.BioEdition && ctx.session.userData && ctx.chat &&
+        ctx.session.lastBotMessageId
+      ) {
+        await ctx.api.deleteMessage(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+        );
         ctx.session.userData.bio = ctx.message?.text;
-        editingConfirmation(ctx);
         const newMessage = await ctx.reply("Successfully edited!");
+        editingConfirmation(ctx);
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.editingStep = EditingStep.Done;
         ctx.session.registrationStep = RegistrationStep.Finish;
@@ -461,7 +485,10 @@ composer.on("message", async (ctx: BotContext) => {
       );
       ctx.session.lastBotMessageId = newMessage.message_id;
     }
-  } else if (step == RegistrationStep.Bio && ctx.session.userData && ctx.chat && ctx.session.lastBotMessageId) {
+  } else if (
+    step == RegistrationStep.Bio && ctx.session.userData && ctx.chat &&
+    ctx.session.lastBotMessageId
+  ) {
     await ctx.api.deleteMessage(
       ctx.chat.id,
       ctx.session.lastBotMessageId,
@@ -644,14 +671,18 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     await askBirthday(ctx);
   } else if (
     data && step2 == EditingStep.GenderEdition && ctx.session.userData &&
-    (data === "MALE" || data === "FEMALE")
+    (data === "MALE" || data === "FEMALE") && ctx.chat &&
+    ctx.session.lastBotMessageId
   ) {
+    ctx.api.deleteMessage(ctx.chat.id, ctx.session.lastBotMessageId);
     if (data === "MALE") {
       ctx.session.userData.gender = Gender.MALE ? Gender.MALE : undefined;
     } else {
       ctx.session.userData.gender = Gender.FEMALE ? Gender.FEMALE : undefined;
     }
+    const newMessage = await ctx.reply("Successfully edited!");
     editingConfirmation(ctx);
+    ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.editingStep = EditingStep.Done;
     ctx.session.registrationStep = RegistrationStep.Finish;
   } else if (
@@ -738,8 +769,15 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     } else {
       // TODO(junkyyz): ask for a permission
     }
-  } else if (data === "edit" && ctx.session.userModel) {
+  } else if (
+    data === "edit" && ctx.session.userModel && ctx.chat &&
+    ctx.session.lastBotMessageId
+  ) {
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
 
     const userContext: UserContext = await createUserContext(
       ctx.state,
@@ -753,7 +791,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: "First Name", callback_data: "edit_FirstName" }],
-            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Last Name", callback_data: "edit_SecondName" }],
             [{ text: "Birthday", callback_data: "edit_birthday" }],
             [{ text: "Bio", callback_data: "edit_bio" }],
             [{ text: "Back", callback_data: "cancel_back" }],
@@ -766,7 +804,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: "First Name", callback_data: "edit_FirstName" }],
-            [{ text: "Second Name", callback_data: "edit_SecondName" }],
+            [{ text: "Last Name", callback_data: "edit_SecondName" }],
             [{ text: "Gender", callback_data: "edit_gender" }],
             [{ text: "Birthday", callback_data: "edit_birthday" }],
             [{ text: "Bio", callback_data: "edit_bio" }],
@@ -892,7 +930,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     editingConfirmation(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
-  } else if (data === "profile") {
+  } else if (data === "profile" && ctx.chat && ctx.session.lastBotMessageId) {
+    await ctx.api.deleteMessage(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+    );
     const userData = getUserData(ctx);
     const keyboard = [
       [{ text: "Edit profile", callback_data: "edit" }],
