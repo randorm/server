@@ -14,7 +14,7 @@ import {
   AUTHENTICATION_TIME_LIMIT,
   AUTHENTICATION_TOKEN_TTL,
   AuthenticationData,
-  WebAppData
+  WebAppData,
 } from "../utils/mod.ts";
 
 export const router = new Router<ServerContext>();
@@ -58,12 +58,12 @@ router.post("/authenticate", async (ctx) => {
         new Date(),
         { units: ["milliseconds"] },
       );
-    
+
       if (!milliseconds || milliseconds > AUTHENTICATION_TIME_LIMIT) {
         ctx.response.status = Status.Unauthorized;
         ctx.response.type = "text/plain";
         ctx.response.body = "Authentication time limit exceeded";
-    
+
         return;
       }
 
@@ -116,15 +116,14 @@ router.post("/authenticate", async (ctx) => {
         new Date(),
         { units: ["milliseconds"] },
       );
-    
+
       if (!milliseconds || milliseconds > AUTHENTICATION_TIME_LIMIT) {
         ctx.response.status = Status.Unauthorized;
         ctx.response.type = "text/plain";
         ctx.response.body = "Authentication time limit exceeded";
-    
+
         return;
       }
-
 
       data = validationResult.data;
 
