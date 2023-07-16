@@ -1011,7 +1011,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
   ) {
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+      console.log(fieldsIds);
+      console.log(ctx.sessions.fieldCurrentIndex);
     const currentField: FieldModel = ctx.session.currentField;
+    console.log(currentField);
     const options: readonly string[] = currentField.options;
     let index = -1;
     console.log(options);
