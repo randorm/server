@@ -1021,22 +1021,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
       ctx.session.fieldCurrentIndex += 1;
       if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
-        await ctx.api.editMessageText(
-          ctx.chat.id,
-          ctx.session.lastBotMessageId,
-          "Yooo congratulations, you finished! Now use /webapp",
-        );
-        await ctx.api.editMessageReplyMarkup(
-          ctx.chat.id,
-          ctx.session.lastBotMessageId,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [],
-              ],
-            },
-          },
-        );
+        await ctx.reply("Yooo congratulations, you finished! Now use /webapp")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
       } else {
