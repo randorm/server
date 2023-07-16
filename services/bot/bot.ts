@@ -32,7 +32,7 @@ export const composer = new Composer<BotContext>();
 // TODO(Junkyyz): Split name -> name and last name. Two questions.
 
 composer.command("start", async (ctx: BotContext) => {
-  const distributionIdTemp = ctx.message?.text?.split(" ")[1];
+  const distributionIdTemp = ctx.message?.text?.split(' ')[1];
   if (typeof distributionIdTemp === "string") {
     const distributionId: number = parseInt(distributionIdTemp, 10);
     ctx.session.distributionId = distributionId;
@@ -69,31 +69,6 @@ composer.command("start", async (ctx: BotContext) => {
   }
 });
 
-composer.command("profile", async (ctx: BotContext) => {
-  if (
-    ctx.session.registrationStep === RegistrationStep.Finish &&
-    ctx.session.fieldStep == FieldStep.FINISH
-  ) {
-    const userData = getUserData(ctx);
-    const keyboard = [
-      [{ text: "Edit Info", callback_data: "edit" }],
-    ];
-
-    const newMessage = await ctx.reply(`Your profile data:\n${userData}`, {
-      reply_markup: {
-        inline_keyboard: keyboard,
-      },
-    });
-
-    ctx.session.lastBotMessageId = newMessage.message_id;
-  } else {
-    await ctx.reply(
-      "*Wow, wow, wow\\. Slow down\\! At first, you need to register\\. Use /start :\\)*",
-      { parse_mode: "MarkdownV2" },
-    );
-  }
-});
-
 composer.command("focuspocus", async (ctx: BotContext) => {
   ctx.session.registrationStep = undefined;
   ctx.session.userData = undefined;
@@ -102,68 +77,60 @@ composer.command("focuspocus", async (ctx: BotContext) => {
 });
 
 composer.command("answer", async (ctx: BotContext) => {
-  if (ctx.session.distributionId && !ctx.session.distributionStarted) {
+  if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     await ctx.reply("Let's start answering the questions :)");
     ctx.session.fieldStep = FieldStep.PROCESS;
-    ctx.session.fieldCurrentIndex = 0;
-    if (
-      ctx.session.userModel?.id && ctx.session.userData?.name &&
-      ctx.session.userData?.surname && ctx.session.userData?.gender &&
-      ctx.session?.userData.birthday && ctx.session?.userData.bio
-    ) {
-      const userId = ctx.session.userModel.id;
-      const userContext: UserContext = await createUserContext(
-        ctx.state,
-        userId,
-      );
+      ctx.session.fieldCurrentIndex = 0;
       if (
-        typeof userContext === "object" && userContext !== null &&
-        ctx.session.distributionId !== undefined
+        ctx.session.userModel?.id && ctx.session.userData?.name &&
+        ctx.session.userData?.surname && ctx.session.userData?.gender &&
+        ctx.session?.userData.birthday && ctx.session?.userData.bio
       ) {
-        const answeredIds: Set<number> = await distributionFieldIds(
+        const userId = ctx.session.userModel.id;
+        const userContext: UserContext = await createUserContext(
           ctx.state,
-          { distributionId: ctx.session.distributionId },
+          userId,
         );
-        const allFields: FieldModel[] = await fields(
-          ctx.state,
-        );
-        const allFieldsIds: Set<number> = new Set();
-        for (let i = 0; i < allFields.length; i++) {
-          allFieldsIds.add(allFields[i].id);
-        }
-        const needToAnswerFieldIds: Set<number> = difference<number>(
-          answeredIds,
-          allFieldsIds,
-        );
-        ctx.session.fieldsIds = [...needToAnswerFieldIds];
-        ctx.session.fieldAmount = ctx.session.fieldsIds.length;
+        if (typeof userContext === "object" && userContext !== null && ctx.session.distributionId !== undefined) {
+          const answeredIds: Set<number> = await distributionFieldIds(
+            ctx.state,
+            { distributionId: ctx.session.distributionId },
+          );
+          const allFields: FieldModel[] = await fields(
+            ctx.state,
+          );
+          const allFieldsIds: Set<number> = new Set();
+          for (let i = 0; i < allFields.length; i++) {
+            allFieldsIds.add(allFields[i].id);
+          }
+          const needToAnswerFieldIds: Set<number> = difference<number>(
+            answeredIds,
+            allFieldsIds,
+          );
+          ctx.session.fieldsIds = [...needToAnswerFieldIds];
+          ctx.session.fieldAmount = ctx.session.fieldsIds.length;
 
-        if (
-          needToAnswerFieldIds && ctx.session.fieldAmount > 0 && ctx.chat &&
-          ctx.session.lastBotMessageId
-        ) {
-          await ctx.api.editMessageText(
-            ctx.chat.id,
-            ctx.session.lastBotMessageId,
-            "Hey! You need to answer some questions about personality. Please, answer honestly :)\nLet's start now!",
-          );
-          await askField(ctx);
-        } else if (ctx.chat && ctx.session.lastBotMessageId) {
-          await ctx.api.editMessageText(
-            ctx.chat.id,
-            ctx.session.lastBotMessageId,
-            "You are lucky (or you are a developer?), we don't have any questions for you. Now you have access to /webapp, try it now :)",
-          );
-          ctx.session.fieldStep = FieldStep.FINISH;
+          if (needToAnswerFieldIds && ctx.session.fieldAmount > 0 && ctx.chat && ctx.session.lastBotMessageId) {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "Hey! You need to answer some questions about personality. Please, answer honestly :)\nLet's start now!",
+            );
+            await askField(ctx);
+          } else if (ctx.chat && ctx.session.lastBotMessageId) {
+            await ctx.api.editMessageText(
+              ctx.chat.id,
+              ctx.session.lastBotMessageId,
+              "You are lucky (or you are a developer?), we don't have any questions for you. Try /webapp now :)",
+            );
+            ctx.session.fieldStep = FieldStep.FINISH;
+          }
+        } else {
+          // TODO(Junkyyz): Write error.
         }
-      } else {
-        // TODO(Junkyyz): Write error.
       }
-    }
   } else {
-    await ctx.reply(
-      "It seems you didn't get the link or already answered questions. Please, be patient, the link will be delivered to you soon :)",
-    );
+    await ctx.reply("It seems you didn't get the link or already answered questions. Please, be patient, the link will be delivered to you soon :)");
   }
 });
 
@@ -173,14 +140,15 @@ composer.command("webapp", async (ctx: BotContext) => {
       "Открыть",
       "https://randorm.com/feed/1",
     );
-    await ctx.api.sendMessage(
-      ctx.chat.id,
-      "Let's open feed.",
-      {
-        reply_markup: inlineKeyboardWebApp,
-      },
-    );
-  } else if (ctx.chat) {
+  await ctx.api.sendMessage(
+            ctx.chat.id,
+            "Let's open feed.",
+            {
+              reply_markup: inlineKeyboardWebApp,
+            },
+          );
+  }
+  else if (ctx.chat) {
     ctx.api.sendMessage(ctx.chat.id, "Wait for the link, please");
   }
 });
@@ -616,9 +584,10 @@ composer.on("message", async (ctx: BotContext) => {
     });
     ctx.session.fieldCurrentIndex += 1;
     if (ctx.session.fieldCurrentIndex === ctx.session.fieldAmount) {
-      const newMessage = await ctx.reply("You finished!! Now use /profile");
+      const newMessage = await ctx.reply("Yooo congratulations, you finished! Now use /webapp");
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldStep = FieldStep.FINISH;
+      ctx.session.answeredQuestions = true;
     } else {
       askField(ctx);
     }
@@ -743,12 +712,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         );
       }
     }
-  } else if (data === "cancel") {
+  } else if (data === "cancel" && ctx.chat) {
     const newMessage = await ctx.reply(
       "Registration was cancelled. Click /start if you remind",
     );
-    // TODO(Azaki-san/Junkyyz): send gif.
-    // await ctx.api.sendAnimation(ctx.chat.id, "CgACAgIAAxkBAAJNMGS0PY_OgYECe7ZJulAXXbf5JN4XAAJLOAACPZugSdQnHqfoylCALwQ");
+    await ctx.api.sendAnimation(ctx.chat.id, "https://images-ext-1.discordapp.net/external/o4tKPQowhnTLKdx5tGtUge4HzkU-0Aa50OKKvSiP7kw/https/media.tenor.com/K15esGPwJwsAAAPo/ryan-gosling.mp4");
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = undefined;
     ctx.session.userData = undefined;
@@ -812,24 +780,25 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         ctx.session.userData?.surname && ctx.session.userData?.gender &&
         ctx.session?.userData.birthday && ctx.session?.userData.bio
       ) {
+      
         if (ctx.session.distributionId !== undefined) {
           await ctx.api.editMessageText(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
-            "Confirmed! Now you are registered, but need to answer some additional questions. Use /now when you are ready",
-          );
+            "Confirmed! Now you are registered, but need to answer some additional questions. Use /now when you are ready"
+          )
         } else {
           await ctx.api.editMessageText(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
-            "Confirmed! Now you are registered. Soon we will send you a link :)",
-          );
+            "Confirmed! Now you are registered. Soon we will send you a link :)"
+          )
         }
-      } else {
-        // TODO(Junkyyz): Write error.
+        } else {
+          // TODO(Junkyyz): Write error.
+        }
       }
-    }
-  } else if (
+} else if (
     data === "edit" && ctx.session.userModel && ctx.chat &&
     ctx.session.lastBotMessageId
   ) {
@@ -1038,7 +1007,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         await ctx.api.editMessageText(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
-          "You finished!! Now use /profile",
+          "Yooo congratulations, you finished! Now use /webapp",
         );
         await ctx.api.editMessageReplyMarkup(
           ctx.chat.id,
@@ -1052,6 +1021,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           },
         );
         ctx.session.fieldStep = FieldStep.FINISH;
+        ctx.session.answeredQuestions = true;
       } else {
         askField(ctx);
       }
