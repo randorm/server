@@ -13,6 +13,7 @@ export interface SessionData {
   fieldsIds?: number[];
   fieldType?: FieldType;
   currentField?: FieldModel;
+  distributionId?: number;
 }
 
 export enum RegistrationStep {
