@@ -302,11 +302,7 @@ async function askField(ctx: BotContext) {
         ctx.chat.id,
         ctx.session.lastBotMessageId,
         {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "Cancel", callback_data: "cancel" }],
-            ],
-          },
+          reply_markup: undefined,
         },
       );
     }
