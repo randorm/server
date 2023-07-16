@@ -595,28 +595,28 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.state,
       ctx.session.userModel.id,
     );
-    setTextAnswer(userContext, {
+    await setTextAnswer(userContext, {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
     });
-    // await ctx.api.editMessageReplyMarkup(
-    //   ctx.chat.id,
-    //   ctx.session.lastBotMessageId,
-    //   {
-    //     reply_markup: undefined,
-    //   },
-    // );
+    await ctx.api.editMessageReplyMarkup(
+      ctx.chat.id,
+      ctx.session.lastBotMessageId,
+      {
+        reply_markup: undefined,
+      },
+    );
     if (ctx.session.fieldsIds.length <= 1 && ctx.session.distributionId !== undefined) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
       );
-      joinDistribution(userContext, { distributionId: ctx.session.distributionId });
+      await joinDistribution(userContext, { distributionId: ctx.session.distributionId });
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldStep = FieldStep.FINISH;
       ctx.session.answeredQuestions = true;
     } else {
       ctx.session.fieldsIds.shift();
-      askField(ctx);
+      await askField(ctx);
     }
   }
 });
@@ -1038,22 +1038,22 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       );
       const ans: readonly number[] = [index];
       console.log("Current fieldId: " + currentFieldId + " Answers: " + ans);
-      setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
-      // await ctx.api.editMessageReplyMarkup(
-      //   ctx.chat.id,
-      //   ctx.session.lastBotMessageId,
-      //   {
-      //     reply_markup: undefined,
-      //   },
-      // );
+      await setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
+      await ctx.api.editMessageReplyMarkup(
+        ctx.chat.id,
+        ctx.session.lastBotMessageId,
+        {
+          reply_markup: undefined,
+        },
+      );
       if (ctx.session.fieldsIds.length <= 1 && ctx.session.distributionId !== undefined) {
         await ctx.reply("Yooo congratulations, you finished! Now use /feed")
         ctx.session.fieldStep = FieldStep.FINISH;
         ctx.session.answeredQuestions = true;
-        joinDistribution(userContext, { distributionId: ctx.session.distributionId });
+        await joinDistribution(userContext, { distributionId: ctx.session.distributionId });
       } else {
         ctx.session.fieldsIds.shift();
-        askField(ctx);
+        await askField(ctx);
       }
     }
     } else {
