@@ -53,10 +53,12 @@ composer.command("start", async (ctx: BotContext) => {
     }
   } else {
     if (ctx.chat) {
-      await ctx.api.sendAnimation(
-        ctx.chat.id,
-        "https://images-ext-2.discordapp.net/external/ytjgK1HIlP_soJz9w6j_T6puEE5KpBI56gzFL4MtRnA/https/media.tenor.com/UKU-t6X9kVoAAAPo/trollszn123-ronaldo.mp4",
-      );
+      if (ctx.session.registrationStep === RegistrationStep.Finish) {
+        await ctx.api.sendAnimation(
+          ctx.chat.id,
+          "https://images-ext-2.discordapp.net/external/ytjgK1HIlP_soJz9w6j_T6puEE5KpBI56gzFL4MtRnA/https/media.tenor.com/UKU-t6X9kVoAAAPo/trollszn123-ronaldo.mp4",
+        );
+      }
     }
   }
   if (!ctx.from?.username) {
