@@ -37,6 +37,14 @@ composer.command("start", async (ctx: BotContext) => {
   if (typeof distributionIdTemp === "string") {
     const distributionId: number = parseInt(distributionIdTemp, 10);
     ctx.session.distributionId = distributionId;
+    await ctx.reply("Hey hey, your distribution id was read :)")
+  } else {
+    if (ctx.chat) {
+      await ctx.api.sendAnimation(
+        ctx.chat.id,
+        "https://images-ext-2.discordapp.net/external/ytjgK1HIlP_soJz9w6j_T6puEE5KpBI56gzFL4MtRnA/https/media.tenor.com/UKU-t6X9kVoAAAPo/trollszn123-ronaldo.mp4",
+      );
+    }
   }
   console.log(ctx.session.distributionId);
   if (!ctx.from?.username) {
@@ -57,12 +65,6 @@ composer.command("start", async (ctx: BotContext) => {
     const keyboard = [
       [{ text: "View profile", callback_data: "profile" }],
     ];
-    if (ctx.chat) {
-      await ctx.api.sendAnimation(
-        ctx.chat.id,
-        "https://images-ext-2.discordapp.net/external/ytjgK1HIlP_soJz9w6j_T6puEE5KpBI56gzFL4MtRnA/https/media.tenor.com/UKU-t6X9kVoAAAPo/trollszn123-ronaldo.mp4",
-      );
-    }
     const newMessage = await ctx.reply(
       `Hi, hi, hi! Is something wrong?`,
       {
