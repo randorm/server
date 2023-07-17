@@ -75,16 +75,6 @@ composer.command("start", async (ctx: BotContext) => {
   }
 });
 
-composer.command("focuspocus", async (ctx: BotContext) => {
-  ctx.session.registrationStep = undefined;
-  ctx.session.userData = undefined;
-  ctx.session.userModel = undefined;
-  ctx.session.answeredQuestions = undefined;
-  ctx.session.fieldStep = undefined;
-  ctx.session.fieldsIds = undefined;
-  await ctx.reply("Done.");
-});
-
 composer.command("answer", async (ctx: BotContext) => {
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     const newMessage = await ctx.reply("Let's start answering the questions :)");
