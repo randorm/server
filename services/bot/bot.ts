@@ -331,7 +331,7 @@ async function askField(ctx: BotContext) {
 function getUserData(ctx: BotContext): string {
   const s =
     `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}. You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}. You are known as a person who: 
-    ${ctx.session.userData?.bio}`;
+${ctx.session.userData?.bio}`;
   return s;
 }
 
@@ -365,6 +365,7 @@ async function editingBack(ctx: BotContext) {
     const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
     );
+    await ctx.reply(`${distributionIds.size} + ${distributionIds}`);
     if (distributionIds.size >= 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
