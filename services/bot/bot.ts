@@ -38,6 +38,7 @@ export const composer = new Composer<BotContext>();
 
 composer.command("start", async (ctx: BotContext) => {
   const distributionIdTemp = ctx.message?.text?.split(" ")[1];
+  let check: number = 0;
   if (typeof distributionIdTemp === "string") {
     const distributionId: number = parseInt(distributionIdTemp, 10);
     if (distribution(ctx.state, { distributionId: distributionId }) !== null) {
@@ -49,6 +50,7 @@ composer.command("start", async (ctx: BotContext) => {
         await ctx.reply(
           "Hey hey, your distribution id was read, you can start answering the questions /answer :)",
         );
+        check = 1;
       }
     }
   } else {
@@ -76,18 +78,20 @@ composer.command("start", async (ctx: BotContext) => {
     ctx.session.lastBotMessageId = newMessage.message_id;
     await askFirstName(ctx);
   } else {
-    const keyboard = [
-      [{ text: "View profile", callback_data: "profile" }],
-    ];
-    const newMessage = await ctx.reply(
-      `Hi, hi, hi! Is something wrong?`,
-      {
-        reply_markup: {
-          inline_keyboard: keyboard,
+    if (check === 0) {
+      const keyboard = [
+        [{ text: "View profile", callback_data: "profile" }],
+      ];
+      const newMessage = await ctx.reply(
+        `Hi, hi, hi! Is something wrong?`,
+        {
+          reply_markup: {
+            inline_keyboard: keyboard,
+          },
         },
-      },
-    );
-    ctx.session.lastBotMessageId = newMessage.message_id;
+      );
+      ctx.session.lastBotMessageId = newMessage.message_id;
+    }
   }
 });
 
