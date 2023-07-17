@@ -13,7 +13,11 @@ import {
   userDistributionsIds,
   userFieldIds,
 } from "../database/operation/user.ts";
-import { distributionFieldIds, joinDistribution } from "../database/operation/distribution.ts";
+import {
+  distribution,
+  distributionFieldIds,
+  joinDistribution,
+} from "../database/operation/distribution.ts";
 import {
   FieldModel,
   FieldType,
@@ -36,8 +40,17 @@ composer.command("start", async (ctx: BotContext) => {
   const distributionIdTemp = ctx.message?.text?.split(" ")[1];
   if (typeof distributionIdTemp === "string") {
     const distributionId: number = parseInt(distributionIdTemp, 10);
-    ctx.session.distributionId = distributionId;
-    await ctx.reply("Hey hey, your distribution id was read :)")
+    if (distribution(ctx.state, { distributionId: distributionId }) !== null) {
+      ctx.session.distributionId = distributionId;
+      if (
+        ctx.session.registrationStep === RegistrationStep.Finish &&
+        ctx.session.userModel
+      ) {
+        await ctx.reply(
+          "Hey hey, your distribution id was read, you can start answering the questions /answer :)",
+        );
+      }
+    }
   } else {
     if (ctx.chat) {
       await ctx.api.sendAnimation(
@@ -79,7 +92,9 @@ composer.command("start", async (ctx: BotContext) => {
 
 composer.command("answer", async (ctx: BotContext) => {
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
-    const newMessage = await ctx.reply("Let's start answering the questions :)");
+    const newMessage = await ctx.reply(
+      "Let's start answering the questions :)",
+    );
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.fieldStep = FieldStep.PROCESS;
     ctx.session.fieldCurrentIndex = 0;
@@ -288,10 +303,9 @@ async function askBio(ctx: BotContext) {
 async function askField(ctx: BotContext) {
   if (
     ctx.session.fieldsIds !== undefined &&
-    ctx.session.fieldCurrentIndex !== undefined && ctx.chat && ctx.session.lastBotMessageId
+    ctx.session.fieldCurrentIndex !== undefined && ctx.chat &&
+    ctx.session.lastBotMessageId
   ) {
-
-
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = await field(ctx.state, {
@@ -316,10 +330,8 @@ async function askField(ctx: BotContext) {
 
 function getUserData(ctx: BotContext): string {
   const s =
-    `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}.
-You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}. You are known as a person who:
-
-${ctx.session.userData?.bio}`;
+    `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}. You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}. You are known as a person who: 
+    ${ctx.session.userData?.bio}`;
   return s;
 }
 
@@ -353,7 +365,7 @@ async function editingBack(ctx: BotContext) {
     const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
     );
-    if (distributionIds.size > 1) {
+    if (distributionIds.size >= 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
           inline_keyboard: [
@@ -591,11 +603,16 @@ composer.on("message", async (ctx: BotContext) => {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
     });
-    if (ctx.session.fieldsIds.length <= 1 && ctx.session.distributionId !== undefined) {
+    if (
+      ctx.session.fieldsIds.length <= 1 &&
+      ctx.session.distributionId !== undefined
+    ) {
       const newMessage = await ctx.reply(
         "Yooo congratulations, you finished! Now use /feed",
       );
-      await joinDistribution(userContext, { distributionId: ctx.session.distributionId });
+      await joinDistribution(userContext, {
+        distributionId: ctx.session.distributionId,
+      });
       ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldStep = FieldStep.FINISH;
       ctx.session.answeredQuestions = true;
@@ -996,51 +1013,59 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined
   ) {
     const currentFieldId: number =
-    ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
-  const currentField: FieldModel = await field(ctx.state, {
-    fieldId: currentFieldId,
-  });
-  if (currentField.type === FieldType.CHOICE) {
+      ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
+    const currentField: FieldModel = await field(ctx.state, {
+      fieldId: currentFieldId,
+    });
+    if (currentField.type === FieldType.CHOICE) {
       console.log(ctx.session.fieldsIds);
       console.log(ctx.session.fieldCurrentIndex);
-    console.log(currentField);
-    const options: readonly string[] = currentField.options;
-    let index = -1;
-    console.log(options);
-    for (let i = 0; i < options.length; i++) {
-      if (data === options[i]) {
-        index = i;
+      console.log(currentField);
+      const options: readonly string[] = currentField.options;
+      let index = -1;
+      console.log(options);
+      for (let i = 0; i < options.length; i++) {
+        if (data === options[i]) {
+          index = i;
+        }
       }
-    }
-    console.log(index, data);
-    if (
-      index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
-      ctx.chat
-    ) {
-      const userContext: UserContext = await createUserContext(
-        ctx.state,
-        ctx.session.userModel.id,
-      );
-      const ans: readonly number[] = [index];
-      console.log("Current fieldId: " + currentFieldId + " Answers: " + ans);
-      await setChoiceAnswer(userContext, { fieldId: currentFieldId, indices: ans });
-      await ctx.api.editMessageReplyMarkup(
-        ctx.chat.id,
-        ctx.session.lastBotMessageId,
-        {
-          reply_markup: undefined,
-        },
-      );
-      if (ctx.session.fieldsIds.length <= 1 && ctx.session.distributionId !== undefined) {
-        await ctx.reply("Yooo congratulations, you finished! Now use /feed")
-        ctx.session.fieldStep = FieldStep.FINISH;
-        ctx.session.answeredQuestions = true;
-        await joinDistribution(userContext, { distributionId: ctx.session.distributionId });
-      } else {
-        ctx.session.fieldsIds.shift();
-        await askField(ctx);
+      console.log(index, data);
+      if (
+        index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
+        ctx.chat
+      ) {
+        const userContext: UserContext = await createUserContext(
+          ctx.state,
+          ctx.session.userModel.id,
+        );
+        const ans: readonly number[] = [index];
+        console.log("Current fieldId: " + currentFieldId + " Answers: " + ans);
+        await setChoiceAnswer(userContext, {
+          fieldId: currentFieldId,
+          indices: ans,
+        });
+        await ctx.api.editMessageReplyMarkup(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          {
+            reply_markup: undefined,
+          },
+        );
+        if (
+          ctx.session.fieldsIds.length <= 1 &&
+          ctx.session.distributionId !== undefined
+        ) {
+          await ctx.reply("Yooo congratulations, you finished! Now use /feed");
+          ctx.session.fieldStep = FieldStep.FINISH;
+          ctx.session.answeredQuestions = true;
+          await joinDistribution(userContext, {
+            distributionId: ctx.session.distributionId,
+          });
+        } else {
+          ctx.session.fieldsIds.shift();
+          await askField(ctx);
+        }
       }
-    }
     } else {
       // TODO(Azaki-san/Junkyyz): Error Message.
     }
