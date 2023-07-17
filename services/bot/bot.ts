@@ -59,7 +59,6 @@ composer.command("start", async (ctx: BotContext) => {
       );
     }
   }
-  console.log(ctx.session.distributionId);
   if (!ctx.from?.username) {
     await ctx.reply(
       "Oops, wait. We can't detect your @username. Please go into the settings and fix it",
@@ -116,16 +115,13 @@ composer.command("answer", async (ctx: BotContext) => {
           ctx.state,
           { distributionId: ctx.session.distributionId },
         );
-        console.log(allFieldsIds);
         const answeredIds: Set<number> = await userFieldIds(
           userContext,
         );
-        console.log(answeredIds);
         const needToAnswerFieldIds: Set<number> = difference<number>(
           allFieldsIds,
           answeredIds,
         );
-        console.log(needToAnswerFieldIds);
         ctx.session.fieldsIds = [...needToAnswerFieldIds];
         ctx.session.fieldAmount = ctx.session.fieldsIds.length;
 
@@ -330,8 +326,7 @@ async function askField(ctx: BotContext) {
 
 function getUserData(ctx: BotContext): string {
   const s =
-    `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}. You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}. You are known as a person who: 
-${ctx.session.userData?.bio}`;
+    `Your name is ${ctx.session.userData?.name} ${ctx.session.userData?.surname}. You were born on ${ctx.session.userData?.birthday}, you are ${ctx.session.userData?.gender?.toString()}. You are known as a person who: ${ctx.session.userData?.bio}`;
   return s;
 }
 
@@ -365,7 +360,6 @@ async function editingBack(ctx: BotContext) {
     const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
     );
-    await ctx.reply(`${distributionIds.size} + ${distributionIds}`);
     if (distributionIds.size >= 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
@@ -847,7 +841,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     const distributionIds: Set<number> = await userDistributionsIds(
       userContext,
     );
-    if (distributionIds.size > 1) {
+    if (distributionIds.size >= 1) {
       const message = await ctx.reply("What information do you want to edit?", {
         reply_markup: {
           inline_keyboard: [
@@ -1006,7 +1000,6 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         inline_keyboard: keyboard,
       },
     });
-    console.log(ctx.session.userModel);
 
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (
@@ -1019,18 +1012,13 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       fieldId: currentFieldId,
     });
     if (currentField.type === FieldType.CHOICE) {
-      console.log(ctx.session.fieldsIds);
-      console.log(ctx.session.fieldCurrentIndex);
-      console.log(currentField);
       const options: readonly string[] = currentField.options;
       let index = -1;
-      console.log(options);
       for (let i = 0; i < options.length; i++) {
         if (data === options[i]) {
           index = i;
         }
       }
-      console.log(index, data);
       if (
         index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
         ctx.chat
@@ -1040,7 +1028,6 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           ctx.session.userModel.id,
         );
         const ans: readonly number[] = [index];
-        console.log("Current fieldId: " + currentFieldId + " Answers: " + ans);
         await setChoiceAnswer(userContext, {
           fieldId: currentFieldId,
           indices: ans,
