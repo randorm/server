@@ -6,7 +6,7 @@ import {
   setChoiceAnswer,
   setTextAnswer,
 } from "../database/operation/answer.ts";
-import { field, fields } from "../database/operation/field.ts";
+import { field } from "../database/operation/field.ts";
 import {
   createUser,
   updateUserProfile,
@@ -32,16 +32,16 @@ import { EditingStep, FieldStep, RegistrationStep } from "./types.ts";
 
 export const composer = new Composer<BotContext>();
 
-// TODO(Junkyyz): validation (name, surname, age -> birthday, bio, etc.) Including validation for answers (from fields)
-// TODO(Junkyyz): database -> assert -> [user / field / answer]
-// TODO(Junkyyz): Split name -> name and last name. Two questions.
-
 composer.command("start", async (ctx: BotContext) => {
+  // If the link to bot contains distribution ID (start=???), then we need to catch it.
   const distributionIdTemp = ctx.message?.text?.split(" ")[1];
-  let check: number = 0;
+  let check = 0;
   if (typeof distributionIdTemp === "string") {
     const distributionId: number = parseInt(distributionIdTemp, 10);
-    if (distribution(ctx.state, { distributionId: distributionId }) !== null) {
+    if (
+      distribution(ctx.state, { distributionId: distributionId }) !== null &&
+      ctx.session.distributionId === undefined
+    ) {
       ctx.session.distributionId = distributionId;
       if (
         ctx.session.registrationStep === RegistrationStep.Finish &&
@@ -63,6 +63,8 @@ composer.command("start", async (ctx: BotContext) => {
       }
     }
   }
+  // Before starting working with bot, user need to have alias.
+
   if (!ctx.from?.username) {
     await ctx.reply(
       "Oops, wait. We can't detect your @username. Please go into the settings and fix it",
@@ -71,6 +73,7 @@ composer.command("start", async (ctx: BotContext) => {
     ctx.session.registrationStep !== RegistrationStep.Finish &&
     !ctx.session.userModel
   ) {
+    // Starting the proccess of registration.
     const newMessage = await ctx.reply(
       "Hi, here we will help you to find the perfect roommates",
       { parse_mode: "Markdown" },
@@ -78,6 +81,7 @@ composer.command("start", async (ctx: BotContext) => {
     ctx.session.lastBotMessageId = newMessage.message_id;
     await askFirstName(ctx);
   } else {
+    // User can check and edit profile.
     if (check === 0) {
       const keyboard = [
         [{ text: "View profile", callback_data: "profile" }],
@@ -95,7 +99,10 @@ composer.command("start", async (ctx: BotContext) => {
   }
 });
 
+// Command for starting answering the questions for distribution.
 composer.command("answer", async (ctx: BotContext) => {
+  // For doing that user need to have distribution ID (it's not in graphql, but in session right now)
+  // Only after answering ALL questions, distribution will be in graphql.
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     const newMessage = await ctx.reply(
       "Let's start answering the questions :)",
@@ -131,6 +138,7 @@ composer.command("answer", async (ctx: BotContext) => {
         ctx.session.fieldsIds = [...needToAnswerFieldIds];
         ctx.session.fieldAmount = ctx.session.fieldsIds.length;
 
+        // After getting all fields ids, start proccess.
         if (
           needToAnswerFieldIds && ctx.session.fieldAmount > 0 && ctx.chat &&
           ctx.session.lastBotMessageId
@@ -160,11 +168,12 @@ composer.command("answer", async (ctx: BotContext) => {
   }
 });
 
+// Run WEBAPP.
 composer.command("feed", async (ctx: BotContext) => {
   if (ctx.chat && ctx.session.distributionId !== undefined) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
-      "Открыть",
-      "https://randorm.com/feed/1",
+      "Open",
+      "https://randorm.com/feed/" + ctx.session.distributionId,
     );
     await ctx.api.sendMessage(
       ctx.chat.id,
@@ -178,6 +187,7 @@ composer.command("feed", async (ctx: BotContext) => {
   }
 });
 
+// Registration. First name.
 async function askFirstName(ctx: BotContext) {
   await ctx.reply(
     "Let's get to know each other. My name is Randorm, what's yours?",
@@ -197,6 +207,7 @@ async function askFirstName(ctx: BotContext) {
   ctx.session.registrationStep = RegistrationStep.FirstName;
 }
 
+// Registration. Second name.
 async function askSecondName(ctx: BotContext) {
   if (ctx.chat?.id && ctx.session.lastBotMessageId) {
     await ctx.api.deleteMessage(
@@ -223,6 +234,7 @@ async function askSecondName(ctx: BotContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
+// Registration. Gender.
 async function askGender(ctx: BotContext) {
   if (ctx.chat?.id && ctx.session.lastBotMessageId) {
     await ctx.api.deleteMessage(
@@ -250,6 +262,7 @@ async function askGender(ctx: BotContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
+// Registration. Birthday.
 async function askBirthday(ctx: BotContext) {
   if (ctx.chat?.id && ctx.session.lastBotMessageId) {
     await ctx.api.deleteMessage(
@@ -276,6 +289,7 @@ async function askBirthday(ctx: BotContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
+// Registration. Bio.
 async function askBio(ctx: BotContext) {
   if (ctx.chat?.id && ctx.session.lastBotMessageId) {
     await ctx.api.deleteMessage(
@@ -302,6 +316,7 @@ async function askBio(ctx: BotContext) {
   ctx.session.previousStep = ctx.session.registrationStep - 1;
 }
 
+// Function for asking questions from distribution.
 async function askField(ctx: BotContext) {
   if (
     ctx.session.fieldsIds !== undefined &&
@@ -336,6 +351,7 @@ function getUserData(ctx: BotContext): string {
   return s;
 }
 
+// Confirm editing.
 async function editingConfirmation(ctx: BotContext) {
   const keyboard = [
     [{ text: "Edit profile", callback_data: "edit" }],
@@ -351,6 +367,7 @@ async function editingConfirmation(ctx: BotContext) {
   }
 }
 
+// Another function for editing.
 async function editingBack(ctx: BotContext) {
   if (ctx.session.lastBotMessageId && ctx.chat?.id) {
     await ctx.api.deleteMessage(
@@ -400,8 +417,10 @@ async function editingBack(ctx: BotContext) {
   }
 }
 
+// Composing ALL messages.
 composer.on("message", async (ctx: BotContext) => {
   const step = ctx.session?.registrationStep;
+  // Check if user want to edit something. Then check what exactly need to change.
   if (step == RegistrationStep.Editing) {
     {
       const step2 = ctx.session.editingStep;
@@ -500,15 +519,13 @@ composer.on("message", async (ctx: BotContext) => {
               bio: ctx.session.userData.bio,
             };
             updateUserProfile(userContext, model);
-          } else {
-            // TODO(Junkyyz): Write error.
           }
         }
       }
     }
   } else if (step == RegistrationStep.FirstName) {
+    // Registration STEPS.
     const name = ctx.message?.text?.split(" ");
-    //TODO(Junkyyz): validation
     if (name && name?.length < 128) {
       ctx.session.userData = {
         name: name[0],
@@ -525,7 +542,6 @@ composer.on("message", async (ctx: BotContext) => {
     }
   } else if (step == RegistrationStep.SecondName) {
     const nameSurname = ctx.message?.text?.split(" ");
-    //TODO(Junkyyz): validation!!!
     if (nameSurname && nameSurname?.length < 128 && ctx.session.userData) {
       ctx.session.userData.surname = nameSurname[0];
       await askGender(ctx);
@@ -596,6 +612,7 @@ composer.on("message", async (ctx: BotContext) => {
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
     ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId
   ) {
+    // If user answer on text field, then we also need to catch it there.
     const userContext: UserContext = await createUserContext(
       ctx.state,
       ctx.session.userModel.id,
@@ -624,10 +641,12 @@ composer.on("message", async (ctx: BotContext) => {
   }
 });
 
+// Composing all inline clicks.
 composer.on("callback_query:data", async (ctx: BotContext) => {
   const data = ctx.callbackQuery?.data;
   const step = ctx.session?.registrationStep;
   const step2 = ctx.session?.editingStep;
+  // First of all, check back button
   if (
     data == "back" && ctx.session.registrationStep != undefined &&
     ctx.session.previousStep != undefined
@@ -743,6 +762,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       }
     }
   } else if (data === "cancel" && ctx.chat) {
+    // Cancel button
     const newMessage = await ctx.reply(
       "Registration was cancelled. Click /start if you remind",
     );
@@ -782,6 +802,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.userData.surname && ctx.session.userData.bio && ctx.chat?.id &&
     ctx.session.lastBotMessageId && ctx.session.userData.birthday
   ) {
+    // Confirm button.
     const bday = ctx.session.userData.birthday.split(".");
 
     const model: ProfileModel = {
@@ -804,10 +825,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       });
       if (typeof userModel === "object" && userModel !== null) {
         ctx.session.userModel = userModel;
-      } else {
-        // TODO(Azaki-san / Junkyyz): something went wrong. Write error.
       }
-
       if (
         ctx.session.userModel?.id && ctx.session.userData?.name &&
         ctx.session.userData?.surname && ctx.session.userData?.gender &&
@@ -826,14 +844,13 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             "Confirmed! Now you are registered. Soon we will send you a link :)",
           );
         }
-      } else {
-        // TODO(Junkyyz): Write error.
       }
     }
   } else if (
     data === "edit" && ctx.session.userModel && ctx.chat &&
     ctx.session.lastBotMessageId
   ) {
+    // Edit button.
     await ctx.answerCallbackQuery({ text: "Editing profile..." });
     await ctx.api.deleteMessage(
       ctx.chat.id,
@@ -1012,6 +1029,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.fieldStep === FieldStep.PROCESS &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined
   ) {
+    // We also need to catch answer for fields there.
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
     const currentField: FieldModel = await field(ctx.state, {
@@ -1060,8 +1078,6 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           await askField(ctx);
         }
       }
-    } else {
-      // TODO(Azaki-san/Junkyyz): Error Message.
     }
   }
 });

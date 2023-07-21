@@ -1,4 +1,4 @@
-import { FieldModel, FieldType, Gender, UserModel } from "./mod.ts";
+import { FieldType, Gender, UserModel } from "./mod.ts";
 
 export interface SessionData {
   registrationStep?: RegistrationStep;
