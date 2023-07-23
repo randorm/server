@@ -174,7 +174,7 @@ composer.command("answer", async (ctx: BotContext) => {
 
 // Run WEBAPP.
 composer.command("feed", async (ctx: BotContext) => {
-  if (ctx.chat && ctx.session.distributionId !== undefined) {
+  if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
       "Open",
       "https://randorm.com/feed/" + ctx.session.distributionId,
@@ -187,7 +187,7 @@ composer.command("feed", async (ctx: BotContext) => {
       },
     );
   } else if (ctx.chat) {
-    ctx.api.sendMessage(ctx.chat.id, "Wait for the link, please");
+    await ctx.api.sendMessage(ctx.chat.id, "Wait for the link, please");
   }
 });
 
