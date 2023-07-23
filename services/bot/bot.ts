@@ -104,6 +104,9 @@ composer.command("start", async (ctx: BotContext) => {
 composer.command("answer", async (ctx: BotContext) => {
   // For doing that user need to have distribution ID (it's not in graphql, but in session right now)
   // Only after answering ALL questions, distribution will be in graphql.
+  ctx.session.previousMessagesIdsForFields = [];
+  ctx.session.removedFieldIds = [];
+  ctx.session.isFirstField = undefined;
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     const newMessage = await ctx.reply(
       "Let's start answering the questions :)",
@@ -333,7 +336,7 @@ async function askField(ctx: BotContext) {
   if (
     ctx.session.fieldsIds !== undefined &&
     ctx.session.fieldCurrentIndex !== undefined && ctx.chat &&
-    ctx.session.lastBotMessageId
+    ctx.session.lastBotMessageId && ctx.session.previousMessagesIdsForFields !== undefined
   ) {
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
@@ -341,19 +344,46 @@ async function askField(ctx: BotContext) {
       fieldId: currentFieldId,
     });
     if (currentField.type === FieldType.TEXT) {
-      const newMessage = await ctx.reply(currentField.question);
-      ctx.session.lastBotMessageId = newMessage.message_id;
       ctx.session.fieldType = FieldType.TEXT;
-      ctx.session.lastBotMessageId = newMessage.message_id;
+      if (ctx.session.isFirstField === undefined) {
+        const newMessage = await ctx.reply(currentField.question);
+        ctx.session.lastBotMessageId = newMessage.message_id;
+        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+      } else {
+        const newMessage = await ctx.reply(currentField.question, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "Back", callback_data: "back_field" }],
+            ],
+          },
+        });
+        ctx.session.lastBotMessageId = newMessage.message_id;
+        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+      }
+
+
     } else if (currentField.type === FieldType.CHOICE) {
       const options: readonly string[] = currentField.options;
-      const newMessage = await ctx.reply(currentField.question, {
-        reply_markup: {
-          inline_keyboard: makeInlineKeyboard(options),
-        },
-      });
-      ctx.session.lastBotMessageId = newMessage.message_id;
+      ctx.session.fieldType = FieldType.CHOICE;
+      if (ctx.session.isFirstField === undefined) {
+        const newMessage = await ctx.reply(currentField.question, {
+          reply_markup: {
+            inline_keyboard: makeInlineKeyboard(options, false),
+          },
+        });
+        ctx.session.lastBotMessageId = newMessage.message_id;
+        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+      } else {
+        const newMessage = await ctx.reply(currentField.question, {
+          reply_markup: {
+            inline_keyboard: makeInlineKeyboard(options, true),
+          },
+        });
+        ctx.session.lastBotMessageId = newMessage.message_id;
+        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+      }
     }
+    ctx.session.isFirstField = 1;
   }
 }
 
@@ -622,7 +652,7 @@ composer.on("message", async (ctx: BotContext) => {
   } else if (
     ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
-    ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId
+    ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId && ctx.session.removedFieldIds !== undefined
   ) {
     // If user answer on text field, then we also need to catch it there.
     const userContext: UserContext = await createUserContext(
@@ -647,6 +677,7 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.session.fieldStep = FieldStep.FINISH;
       ctx.session.answeredQuestions = true;
     } else {
+      ctx.session.removedFieldIds.push(ctx.session.fieldsIds[0]);
       ctx.session.fieldsIds.shift();
       await askField(ctx);
     }
@@ -1037,6 +1068,22 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
+  } else if (data === "back_field" && ctx.session.removedFieldIds !== undefined && ctx.session.removedFieldIds.length >= 1 && ctx.session.fieldsIds && ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.removedFieldIds !== undefined && ctx.session.removedFieldIds.length > 0 && ctx.session.previousMessagesIdsForFields && ctx.session.previousMessagesIdsForFields.length >= 2 ) {
+    for (let j = 0; j < 2; j++) {
+      await ctx.api.deleteMessage(
+        ctx.chat.id,
+        ctx.session.previousMessagesIdsForFields[ctx.session.previousMessagesIdsForFields.length - 1],
+      );
+      ctx.session.previousMessagesIdsForFields.pop();
+    }
+    const a = ctx.session.removedFieldIds.pop();
+    if (a !== undefined) {
+      ctx.session.fieldsIds.unshift(a);
+    }
+    if (ctx.session.removedFieldIds.length === 0) {
+      ctx.session.isFirstField = undefined;
+    }
+    await askField(ctx);
   } else if (
     ctx.session.fieldStep === FieldStep.PROCESS &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined
@@ -1057,7 +1104,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       }
       if (
         index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
-        ctx.chat
+        ctx.chat && ctx.session.removedFieldIds !== undefined
       ) {
         const userContext: UserContext = await createUserContext(
           ctx.state,
@@ -1086,6 +1133,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             distributionId: ctx.session.distributionId,
           });
         } else {
+          ctx.session.removedFieldIds.push(ctx.session.fieldsIds[0]);
           ctx.session.fieldsIds.shift();
           await askField(ctx);
         }
