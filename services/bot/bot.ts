@@ -29,6 +29,7 @@ import { makeInlineKeyboard } from "./tools/InlineKeyboardMaker.ts";
 import { createUserContext } from "./tools/authentificate.ts";
 import { isValidDate } from "./tools/validDateTemp.ts";
 import { EditingStep, FieldStep, RegistrationStep } from "./types.ts";
+import { START_GIF_ID, CANCEL_GIF_ID } from "../../utils/constants.ts";
 
 export const composer = new Composer<BotContext>();
 
@@ -58,7 +59,7 @@ composer.command("start", async (ctx: BotContext) => {
       if (ctx.session.registrationStep === RegistrationStep.Finish) {
         await ctx.api.sendAnimation(
           ctx.chat.id,
-          "https://images-ext-2.discordapp.net/external/ytjgK1HIlP_soJz9w6j_T6puEE5KpBI56gzFL4MtRnA/https/media.tenor.com/UKU-t6X9kVoAAAPo/trollszn123-ronaldo.mp4",
+          START_GIF_ID,
         );
       }
     }
@@ -768,7 +769,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     );
     await ctx.api.sendAnimation(
       ctx.chat.id,
-      "https://images-ext-1.discordapp.net/external/o4tKPQowhnTLKdx5tGtUge4HzkU-0Aa50OKKvSiP7kw/https/media.tenor.com/K15esGPwJwsAAAPo/ryan-gosling.mp4",
+      CANCEL_GIF_ID,
     );
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.registrationStep = undefined;
