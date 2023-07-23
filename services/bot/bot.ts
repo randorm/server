@@ -188,6 +188,17 @@ composer.command("feed", async (ctx: BotContext) => {
   }
 });
 
+
+composer.command("cancel", async (ctx: BotContext) => {
+  if (ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS) {
+    ctx.session.fieldStep = undefined;
+    await ctx.api.sendMessage(
+      ctx.chat.id,
+      "Done.",
+    )
+  }
+});
+
 // Registration. First name.
 async function askFirstName(ctx: BotContext) {
   await ctx.reply(
