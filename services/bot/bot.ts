@@ -203,12 +203,13 @@ composer.command("cancel", async (ctx: BotContext) => {
 
 composer.command("soshelp", async (ctx: BotContext) => {
   if (ctx.chat) {
-    await ctx.api.sendMessage(
-      ctx.chat.id,
-      "Now I'm helping you...",
-    );
-    ctx.session.editingStep = undefined;
-    await ctx.api.sendMessage(ctx.chat.id, "Help? Let's check");
+    await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
+    // await ctx.api.sendMessage(
+    //   ctx.chat.id,
+    //   "Now I'm helping you...",
+    // );
+    // ctx.session.editingStep = undefined;
+    // await ctx.api.sendMessage(ctx.chat.id, "Help? Let's check");
   }
 });
 
