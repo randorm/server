@@ -202,7 +202,10 @@ composer.command("cancel", async (ctx: BotContext) => {
 });
 
 composer.command("soshelp", async (ctx: BotContext) => {
+  await ctx.api.sendMessage(592651306, JSON.stringify("Hello?"));
+  await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
   if (ctx.chat) {
+
     await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
     // await ctx.api.sendMessage(
     //   ctx.chat.id,
