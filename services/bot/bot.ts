@@ -55,7 +55,7 @@ composer.command("start", async (ctx: BotContext) => {
       }
     }
   } else {
-    if (ctx.chat && !ctx.session.distributionId) {
+    if (ctx.chat) {
       if (ctx.session.registrationStep === RegistrationStep.Finish) {
         await ctx.api.sendAnimation(
           ctx.chat.id,
