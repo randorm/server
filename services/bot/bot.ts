@@ -12,6 +12,7 @@ import {
   updateUserProfile,
   userDistributionsIds,
   userFieldIds,
+  user,
 } from "../database/operation/user.ts";
 import {
   distribution,
@@ -214,6 +215,20 @@ composer.command("soshelp", async (ctx: BotContext) => {
     // ctx.session.editingStep = undefined;
     // await ctx.api.sendMessage(ctx.chat.id, "Help? Let's check");
   }
+});
+
+composer.command("returnsomething", async (ctx: BotContext) => {
+
+  if (ctx.session.userModel) {
+    ctx.session.userModel = await user(ctx.state, { userId: ctx.session.userModel.id });
+    ctx.session.userData = { name: ctx.session.userModel.profile.firstName, surname: ctx.session.userModel.profile.lastName,
+      gender: ctx.session.userModel.profile.gender, birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
+    bio: ctx.session.userModel.profile.bio};
+    await ctx.reply("DONE!!!");
+  } else {
+    await ctx.reply("Done.");
+  }
+
 });
 
 // Registration. First name.
@@ -573,7 +588,7 @@ composer.on("message", async (ctx: BotContext) => {
               ),
               bio: ctx.session.userData.bio,
             };
-            updateUserProfile(userContext, model);
+            await updateUserProfile(userContext, model);
           }
         }
         ctx.session.editingStep = undefined;
