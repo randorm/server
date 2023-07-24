@@ -29,7 +29,7 @@ import { makeInlineKeyboard } from "./tools/InlineKeyboardMaker.ts";
 import { createUserContext } from "./tools/authentificate.ts";
 import { isValidDate } from "./tools/validDateTemp.ts";
 import { EditingStep, FieldStep, RegistrationStep } from "./types.ts";
-import { START_GIF_ID, CANCEL_GIF_ID } from "../../utils/constants.ts";
+import { CANCEL_GIF_ID, START_GIF_ID } from "../../utils/constants.ts";
 
 export const composer = new Composer<BotContext>();
 
@@ -191,14 +191,24 @@ composer.command("feed", async (ctx: BotContext) => {
   }
 });
 
-
 composer.command("cancel", async (ctx: BotContext) => {
   if (ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS) {
     ctx.session.fieldStep = undefined;
     await ctx.api.sendMessage(
       ctx.chat.id,
       "Done.",
-    )
+    );
+  }
+});
+
+composer.command("soshelp", async (ctx: BotContext) => {
+  if (ctx.chat) {
+    await ctx.api.sendMessage(
+      ctx.chat.id,
+      "Now I'm helping you...",
+    );
+    ctx.session.editingStep = undefined;
+    await ctx.api.sendMessage(ctx.chat.id, "Help? Let's check");
   }
 });
 
@@ -336,7 +346,8 @@ async function askField(ctx: BotContext) {
   if (
     ctx.session.fieldsIds !== undefined &&
     ctx.session.fieldCurrentIndex !== undefined && ctx.chat &&
-    ctx.session.lastBotMessageId && ctx.session.previousMessagesIdsForFields !== undefined
+    ctx.session.lastBotMessageId &&
+    ctx.session.previousMessagesIdsForFields !== undefined
   ) {
     const currentFieldId: number =
       ctx.session.fieldsIds[ctx.session.fieldCurrentIndex];
@@ -360,8 +371,6 @@ async function askField(ctx: BotContext) {
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
       }
-
-
     } else if (currentField.type === FieldType.CHOICE) {
       const options: readonly string[] = currentField.options;
       ctx.session.fieldType = FieldType.CHOICE;
@@ -563,6 +572,7 @@ composer.on("message", async (ctx: BotContext) => {
             updateUserProfile(userContext, model);
           }
         }
+        ctx.session.editingStep = undefined;
       }
     }
   } else if (step == RegistrationStep.FirstName) {
@@ -652,7 +662,8 @@ composer.on("message", async (ctx: BotContext) => {
   } else if (
     ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
-    ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId && ctx.session.removedFieldIds !== undefined
+    ctx.message?.text && ctx.chat && ctx.session.lastBotMessageId &&
+    ctx.session.removedFieldIds !== undefined
   ) {
     // If user answer on text field, then we also need to catch it there.
     const userContext: UserContext = await createUserContext(
@@ -1068,11 +1079,22 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
-  } else if (data === "back_field" && ctx.session.removedFieldIds !== undefined && ctx.session.removedFieldIds.length >= 1 && ctx.session.fieldsIds && ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.removedFieldIds !== undefined && ctx.session.removedFieldIds.length > 0 && ctx.session.previousMessagesIdsForFields && ctx.session.previousMessagesIdsForFields.length >= 2 ) {
+  } else if (
+    data === "back_field" && ctx.session.removedFieldIds !== undefined &&
+    ctx.session.removedFieldIds.length >= 1 && ctx.session.fieldsIds &&
+    ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS &&
+    ctx.session.removedFieldIds !== undefined &&
+    ctx.session.removedFieldIds.length > 0 &&
+    ctx.session.previousMessagesIdsForFields &&
+    ctx.session.previousMessagesIdsForFields.length >= 2
+  ) {
     for (let j = 0; j < 2; j++) {
       await ctx.api.deleteMessage(
         ctx.chat.id,
-        ctx.session.previousMessagesIdsForFields[ctx.session.previousMessagesIdsForFields.length - 1],
+        ctx.session
+          .previousMessagesIdsForFields[
+            ctx.session.previousMessagesIdsForFields.length - 1
+          ],
       );
       ctx.session.previousMessagesIdsForFields.pop();
     }

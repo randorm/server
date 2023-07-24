@@ -1,7 +1,8 @@
 import { InlineButton } from "../../bot/mod.ts";
 
 export function makeInlineKeyboard(
-  answers: readonly string[], needBack: boolean
+  answers: readonly string[],
+  needBack: boolean,
 ): InlineButton[][] {
   const inlineKeyboard: InlineButton[][] = [];
   for (let i = 0; i < answers.length; i++) {
