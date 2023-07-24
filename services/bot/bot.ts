@@ -10,9 +10,9 @@ import { field } from "../database/operation/field.ts";
 import {
   createUser,
   updateUserProfile,
+  user,
   userDistributionsIds,
   userFieldIds,
-  user,
 } from "../database/operation/user.ts";
 import {
   distribution,
@@ -89,7 +89,12 @@ composer.command("start", async (ctx: BotContext) => {
         [{ text: "View profile", callback_data: "profile" }],
       ];
       const newMessage = await ctx.reply(
-        `Hi, hi, hi! There were a button for editing your profile. This button will return in a few days. Thank you for your patience :)`,
+        `Hi, hi, hi! There were a button for editing your profile. This button will return in a few days. You can just look. Thank you for your patience :)`,
+        {
+          reply_markup: {
+            inline_keyboard: keyboard,
+          },
+        },
       );
       ctx.session.lastBotMessageId = newMessage.message_id;
     }
@@ -201,7 +206,6 @@ composer.command("soshelp", async (ctx: BotContext) => {
   await ctx.api.sendMessage(592651306, JSON.stringify("Hello?"));
   await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
   if (ctx.chat) {
-
     await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
     // await ctx.api.sendMessage(
     //   ctx.chat.id,
@@ -213,17 +217,21 @@ composer.command("soshelp", async (ctx: BotContext) => {
 });
 
 composer.command("returnsomething", async (ctx: BotContext) => {
-
   if (ctx.session.userModel) {
-    ctx.session.userModel = await user(ctx.state, { userId: ctx.session.userModel.id });
-    ctx.session.userData = { name: ctx.session.userModel.profile.firstName, surname: ctx.session.userModel.profile.lastName,
-      gender: ctx.session.userModel.profile.gender, birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
-    bio: ctx.session.userModel.profile.bio};
+    ctx.session.userModel = await user(ctx.state, {
+      userId: ctx.session.userModel.id,
+    });
+    ctx.session.userData = {
+      name: ctx.session.userModel.profile.firstName,
+      surname: ctx.session.userModel.profile.lastName,
+      gender: ctx.session.userModel.profile.gender,
+      birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
+      bio: ctx.session.userModel.profile.bio,
+    };
     await ctx.reply("DONE!!!");
   } else {
     await ctx.reply("Done.");
   }
-
 });
 
 // Registration. First name.
@@ -1086,11 +1094,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       [{ text: "Edit profile", callback_data: "edit" }],
     ];
 
-    const newMessage = await ctx.reply(`${userData}`, {
-      reply_markup: {
-        inline_keyboard: keyboard,
-      },
-    });
+    const newMessage = await ctx.reply(`${userData}`);
 
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (
