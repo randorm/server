@@ -89,12 +89,7 @@ composer.command("start", async (ctx: BotContext) => {
         [{ text: "View profile", callback_data: "profile" }],
       ];
       const newMessage = await ctx.reply(
-        `Hi, hi, hi! Is something wrong?`,
-        {
-          reply_markup: {
-            inline_keyboard: keyboard,
-          },
-        },
+        `Hi, hi, hi! There were a button for editing your profile. This button will return in a few days. Thank you for your patience :)`,
       );
       ctx.session.lastBotMessageId = newMessage.message_id;
     }
