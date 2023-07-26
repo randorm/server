@@ -221,6 +221,11 @@ composer.command("cancel", async (ctx: BotContext) => {
   }
 });
 
+composer.command("clearme12341", async (ctx: BotContext) => {
+  ctx.session = undefined;
+  await ctx.reply("Done.");
+});
+
 async function deleteUselessMessages(ctx: BotContext) {
   if (
     ctx.session.messageIdsForDeleting && ctx.chat &&
