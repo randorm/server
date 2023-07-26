@@ -348,29 +348,28 @@ async function askBio(ctx: BotContext) {
 }
 
 async function tryUpdateUserProfile(ctx: BotContext) {
-  if (ctx.session.editingStep === EditingStep.Done) {
-    if (
-      ctx.session.userModel?.id && ctx.session.userData?.name &&
-      ctx.session.userData?.surname && ctx.session.userData?.gender &&
-      ctx.session?.userData.birthday && ctx.session?.userData.bio
-    ) {
-      const userId = ctx.session.userModel.id;
-      const userContext = await createUserContext(ctx.state, userId);
-      if (typeof userContext === "object" && userContext !== null) {
-        const bday = ctx.session.userData.birthday.split(".");
+  if (
+    ctx.session.userModel && ctx.session.userData &&
+    ctx.session.userData.name &&
+    ctx.session.userData.surname && ctx.session.userData?.gender &&
+    ctx.session.userData.birthday && ctx.session.userData.bio
+  ) {
+    const userId = ctx.session.userModel.id;
+    const userContext = await createUserContext(ctx.state, userId);
+    if (typeof userContext === "object" && userContext !== null) {
+      const bday = ctx.session.userData.birthday.split(".");
 
-        const model: ProfileModel = {
-          firstName: ctx.session.userData.name,
-          lastName: ctx.session.userData.surname,
-          gender: ctx.session.userData.gender,
-          birthday: DateTimeScalar.parseValue(
-            bday[2] + "-" + bday[1] + "-" + bday[0] + " 00:00:00",
-          ),
-          bio: ctx.session.userData.bio,
-        };
-        const temp = await updateUserProfile(userContext, model);
-        ctx.session.userModel = temp;
-      }
+      const model: ProfileModel = {
+        firstName: ctx.session.userData.name,
+        lastName: ctx.session.userData.surname,
+        gender: ctx.session.userData.gender,
+        birthday: DateTimeScalar.parseValue(
+          bday[2] + "-" + bday[1] + "-" + bday[0] + " 00:00:00",
+        ),
+        bio: ctx.session.userData.bio,
+      };
+      const temp = await updateUserProfile(userContext, model);
+      ctx.session.userModel = temp;
     }
     ctx.session.editingStep = undefined;
   }
