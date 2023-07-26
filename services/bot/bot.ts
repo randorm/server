@@ -722,7 +722,7 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.session.lastBotMessageId,
     );
     const biography = ctx.message?.text;
-    if (biography !== undefined && biography?.length > 256) {
+    if (biography !== undefined && biography?.length <= 256) {
       ctx.session.userData.bio = ctx.message?.text;
       ctx.session.registrationStep = RegistrationStep.Finish;
       ctx.session.previousStep = RegistrationStep.Bio;
