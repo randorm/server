@@ -620,7 +620,9 @@ composer.on("message", async (ctx: BotContext) => {
         const tempBio = ctx.session.userData.bio;
         ctx.session.userData.bio = bio;
         try {
+          await ctx.reply(JSON.stringify(ctx.session.userModel));
           await tryUpdateUserProfile(ctx);
+          await ctx.reply(JSON.stringify(ctx.session.userModel));
           const newMessage = await ctx.reply("Successfully edited!");
           await editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
