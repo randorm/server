@@ -102,24 +102,6 @@ composer.command("start", async (ctx: BotContext) => {
   }
 });
 
-composer.command("returnsomething", async (ctx: BotContext) => {
-  if (ctx.session.userModel) {
-    ctx.session.userModel = await user(ctx.state, {
-      userId: ctx.session.userModel.id,
-    });
-    ctx.session.userData = {
-      name: ctx.session.userModel.profile.firstName,
-      surname: ctx.session.userModel.profile.lastName,
-      gender: ctx.session.userModel.profile.gender,
-      birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
-      bio: ctx.session.userModel.profile.bio,
-    };
-    await ctx.reply("DONE!!!");
-  } else {
-    await ctx.reply("Done.");
-  }
-});
-
 // Command for starting answering the questions for distribution.
 composer.command("answer", async (ctx: BotContext) => {
   // For doing that user need to have distribution ID (it's not in graphql, but in session right now)
@@ -219,11 +201,6 @@ composer.command("cancel", async (ctx: BotContext) => {
       "Done.",
     );
   }
-});
-
-composer.command("clearme12341", async (ctx: BotContext) => {
-  ctx.session = undefined;
-  await ctx.reply("Done.");
 });
 
 async function deleteUselessMessages(ctx: BotContext) {
@@ -664,6 +641,13 @@ composer.on("message", async (ctx: BotContext) => {
             if (ctx.session.messageIdsForDeleting !== undefined) {
               ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
             }
+          }
+        } else {
+          const uselessMessage = await ctx.reply(
+            "Incorrect format. Try again (bio should be in an interval from 1 to 256 symbols)",
+          );
+          if (ctx.session.messageIdsForDeleting !== undefined) {
+            ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
           }
         }
       }
