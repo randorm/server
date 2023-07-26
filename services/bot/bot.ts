@@ -522,9 +522,9 @@ composer.on("message", async (ctx: BotContext) => {
           const tempName = ctx.session.userData.name;
           ctx.session.userData.name = name;
           try {
-            tryUpdateUserProfile(ctx);
+            await tryUpdateUserProfile(ctx);
             const newMessage = await ctx.reply("Successfully edited!");
-            editingConfirmation(ctx);
+            await editingConfirmation(ctx);
             ctx.session.lastBotMessageId = newMessage.message_id;
             ctx.session.editingStep = EditingStep.Done;
             ctx.session.registrationStep = RegistrationStep.Finish;
@@ -554,9 +554,9 @@ composer.on("message", async (ctx: BotContext) => {
           const tempSurname = ctx.session.userData.surname;
           ctx.session.userData.surname = name;
           try {
-            tryUpdateUserProfile(ctx);
+            await tryUpdateUserProfile(ctx);
             const newMessage = await ctx.reply("Successfully edited!");
-            editingConfirmation(ctx);
+            await editingConfirmation(ctx);
             ctx.session.lastBotMessageId = newMessage.message_id;
             ctx.session.editingStep = EditingStep.Done;
             ctx.session.registrationStep = RegistrationStep.Finish;
@@ -586,9 +586,9 @@ composer.on("message", async (ctx: BotContext) => {
           const tempBirthday = ctx.session.userData.birthday;
           ctx.session.userData.birthday = birthday;
           try {
-            tryUpdateUserProfile(ctx);
+            await tryUpdateUserProfile(ctx);
             const newMessage = await ctx.reply("Successfully edited!");
-            editingConfirmation(ctx);
+            await editingConfirmation(ctx);
             ctx.session.lastBotMessageId = newMessage.message_id;
             ctx.session.editingStep = EditingStep.Done;
             ctx.session.registrationStep = RegistrationStep.Finish;
@@ -620,9 +620,9 @@ composer.on("message", async (ctx: BotContext) => {
         const tempBio = ctx.session.userData.bio;
         ctx.session.userData.bio = bio;
         try {
-          tryUpdateUserProfile(ctx);
+          await tryUpdateUserProfile(ctx);
           const newMessage = await ctx.reply("Successfully edited!");
-          editingConfirmation(ctx);
+          await editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
           ctx.session.editingStep = EditingStep.Done;
           ctx.session.registrationStep = RegistrationStep.Finish;
@@ -927,7 +927,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       ctx.session.userData.gender = Gender.FEMALE ? Gender.FEMALE : undefined;
     }
     const newMessage = await ctx.reply("Successfully edited!");
-    editingConfirmation(ctx);
+    await editingConfirmation(ctx);
     ctx.session.lastBotMessageId = newMessage.message_id;
     ctx.session.editingStep = EditingStep.Done;
     ctx.session.registrationStep = RegistrationStep.Finish;
@@ -1136,11 +1136,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     ctx.session.editingStep = EditingStep.BioEdition;
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (data === "edit_back" && ctx.session.lastBotMessageId) {
-    editingBack(ctx);
+    await editingBack(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
   } else if (data === "cancel_back" && ctx.session.lastBotMessageId) {
-    editingConfirmation(ctx);
+    await editingConfirmation(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
   } else if (data === "profile" && ctx.chat && ctx.session.lastBotMessageId) {
