@@ -17,6 +17,7 @@ export interface SessionData {
   previousMessagesIdsForFields?: number[];
   removedFieldIds?: number[];
   isFirstField?: number;
+  messageIdsForDeleting?: number[];
 }
 
 export enum RegistrationStep {

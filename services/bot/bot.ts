@@ -35,6 +35,7 @@ import { CANCEL_GIF_ID, START_GIF_ID } from "../../utils/constants.ts";
 export const composer = new Composer<BotContext>();
 
 composer.command("start", async (ctx: BotContext) => {
+  await deleteUselessMessages(ctx);
   // If the link to bot contains distribution ID (start=???), then we need to catch it.
   const distributionIdTemp = ctx.message?.text?.split(" ")[1];
   let check = 0;
@@ -89,7 +90,7 @@ composer.command("start", async (ctx: BotContext) => {
         [{ text: "View profile", callback_data: "profile" }],
       ];
       const newMessage = await ctx.reply(
-        `Hi, hi, hi! There were a button for editing your profile. This button will return in a few days. You can just look. Thank you for your patience :)`,
+        `Hi, hi, hi! Is something wrong?`,
         {
           reply_markup: {
             inline_keyboard: keyboard,
@@ -202,37 +203,20 @@ composer.command("cancel", async (ctx: BotContext) => {
   }
 });
 
-composer.command("soshelp", async (ctx: BotContext) => {
-  await ctx.api.sendMessage(592651306, JSON.stringify("Hello?"));
-  await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
-  if (ctx.chat) {
-    await ctx.api.sendMessage(592651306, JSON.stringify(ctx.session));
-    // await ctx.api.sendMessage(
-    //   ctx.chat.id,
-    //   "Now I'm helping you...",
-    // );
-    // ctx.session.editingStep = undefined;
-    // await ctx.api.sendMessage(ctx.chat.id, "Help? Let's check");
+async function deleteUselessMessages(ctx: BotContext) {
+  if (
+    ctx.session.messageIdsForDeleting && ctx.chat &&
+    ctx.session.messageIdsForDeleting.length >= 1
+  ) {
+    for (let i = 0; i < ctx.session.messageIdsForDeleting.length; i++) {
+      await ctx.api.deleteMessage(
+        ctx.chat.id,
+        ctx.session.messageIdsForDeleting[i],
+      );
+    }
   }
-});
-
-composer.command("returnsomething", async (ctx: BotContext) => {
-  if (ctx.session.userModel) {
-    ctx.session.userModel = await user(ctx.state, {
-      userId: ctx.session.userModel.id,
-    });
-    ctx.session.userData = {
-      name: ctx.session.userModel.profile.firstName,
-      surname: ctx.session.userModel.profile.lastName,
-      gender: ctx.session.userModel.profile.gender,
-      birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
-      bio: ctx.session.userModel.profile.bio,
-    };
-    await ctx.reply("DONE!!!");
-  } else {
-    await ctx.reply("Done.");
-  }
-});
+  ctx.session.messageIdsForDeleting = [];
+}
 
 // Registration. First name.
 async function askFirstName(ctx: BotContext) {
@@ -361,6 +345,35 @@ async function askBio(ctx: BotContext) {
   ctx.session.lastBotMessageId = newMessage.message_id;
   ctx.session.registrationStep = RegistrationStep.Bio;
   ctx.session.previousStep = ctx.session.registrationStep - 1;
+}
+
+async function tryUpdateUserProfile(ctx: BotContext) {
+  if (ctx.session.editingStep === EditingStep.Done) {
+    if (
+      ctx.session.userModel?.id && ctx.session.userData?.name &&
+      ctx.session.userData?.surname && ctx.session.userData?.gender &&
+      ctx.session?.userData.birthday && ctx.session?.userData.bio
+    ) {
+      const userId = ctx.session.userModel.id;
+      const userContext = await createUserContext(ctx.state, userId);
+      if (typeof userContext === "object" && userContext !== null) {
+        const bday = ctx.session.userData.birthday.split(".");
+
+        const model: ProfileModel = {
+          firstName: ctx.session.userData.name,
+          lastName: ctx.session.userData.surname,
+          gender: ctx.session.userData.gender,
+          birthday: DateTimeScalar.parseValue(
+            bday[2] + "-" + bday[1] + "-" + bday[0] + " 00:00:00",
+          ),
+          bio: ctx.session.userData.bio,
+        };
+        const temp = await updateUserProfile(userContext, model);
+        ctx.session.userModel = temp;
+      }
+    }
+    ctx.session.editingStep = undefined;
+  }
 }
 
 // Function for asking questions from distribution.
@@ -506,14 +519,27 @@ composer.on("message", async (ctx: BotContext) => {
             ctx.chat.id,
             ctx.session.lastBotMessageId,
           );
+          const tempName = ctx.session.userData.name;
           ctx.session.userData.name = name;
-          const newMessage = await ctx.reply("Successfully edited!");
-          editingConfirmation(ctx);
-          ctx.session.lastBotMessageId = newMessage.message_id;
-          ctx.session.editingStep = EditingStep.Done;
-          ctx.session.registrationStep = RegistrationStep.Finish;
+          try {
+            tryUpdateUserProfile(ctx);
+            const newMessage = await ctx.reply("Successfully edited!");
+            editingConfirmation(ctx);
+            ctx.session.lastBotMessageId = newMessage.message_id;
+            ctx.session.editingStep = EditingStep.Done;
+            ctx.session.registrationStep = RegistrationStep.Finish;
+            await deleteUselessMessages(ctx);
+          } catch (e) {
+            ctx.session.userData.name = tempName;
+            const uselessMessage = await ctx.reply(
+              "Incorrect format. Try again (Name)",
+            );
+            if (ctx.session.messageIdsForDeleting !== undefined) {
+              ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
+            }
+          }
         } else {
-          ctx.reply("Incorrect format. Try again (Name)");
+          await ctx.reply("Incorrect format. Try again (Name)");
         }
       }
       if (
@@ -525,12 +551,25 @@ composer.on("message", async (ctx: BotContext) => {
             ctx.chat.id,
             ctx.session.lastBotMessageId,
           );
+          const tempSurname = ctx.session.userData.surname;
           ctx.session.userData.surname = name;
-          const newMessage = await ctx.reply("Successfully edited!");
-          editingConfirmation(ctx);
-          ctx.session.lastBotMessageId = newMessage.message_id;
-          ctx.session.editingStep = EditingStep.Done;
-          ctx.session.registrationStep = RegistrationStep.Finish;
+          try {
+            tryUpdateUserProfile(ctx);
+            const newMessage = await ctx.reply("Successfully edited!");
+            editingConfirmation(ctx);
+            ctx.session.lastBotMessageId = newMessage.message_id;
+            ctx.session.editingStep = EditingStep.Done;
+            ctx.session.registrationStep = RegistrationStep.Finish;
+            await deleteUselessMessages(ctx);
+          } catch (e) {
+            ctx.session.userData.surname = tempSurname;
+            const uselessMessage = await ctx.reply(
+              "Incorrect format. Try again (Surname)",
+            );
+            if (ctx.session.messageIdsForDeleting !== undefined) {
+              ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
+            }
+          }
         } else {
           ctx.reply("Incorrect format. Try again (Surname)");
         }
@@ -544,12 +583,25 @@ composer.on("message", async (ctx: BotContext) => {
             ctx.chat.id,
             ctx.session.lastBotMessageId,
           );
+          const tempBirthday = ctx.session.userData.birthday;
           ctx.session.userData.birthday = birthday;
-          const newMessage = await ctx.reply("Successfully edited!");
-          editingConfirmation(ctx);
-          ctx.session.lastBotMessageId = newMessage.message_id;
-          ctx.session.editingStep = EditingStep.Done;
-          ctx.session.registrationStep = RegistrationStep.Finish;
+          try {
+            tryUpdateUserProfile(ctx);
+            const newMessage = await ctx.reply("Successfully edited!");
+            editingConfirmation(ctx);
+            ctx.session.lastBotMessageId = newMessage.message_id;
+            ctx.session.editingStep = EditingStep.Done;
+            ctx.session.registrationStep = RegistrationStep.Finish;
+            await deleteUselessMessages(ctx);
+          } catch (e) {
+            ctx.session.userData.birthday = tempBirthday;
+            const uselessMessage = await ctx.reply(
+              "Incorrect format. Try again (DD.MM.YYYY)",
+            );
+            if (ctx.session.messageIdsForDeleting !== undefined) {
+              ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
+            }
+          }
         } else {
           const newMessage = await ctx.reply(
             "Incorrect format. Try again (DD.MM.YYYY)",
@@ -560,41 +612,30 @@ composer.on("message", async (ctx: BotContext) => {
         step2 == EditingStep.BioEdition && ctx.session.userData && ctx.chat &&
         ctx.session.lastBotMessageId
       ) {
+        const bio = ctx.message?.text;
         await ctx.api.deleteMessage(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
         );
-        ctx.session.userData.bio = ctx.message?.text;
-        const newMessage = await ctx.reply("Successfully edited!");
-        editingConfirmation(ctx);
-        ctx.session.lastBotMessageId = newMessage.message_id;
-        ctx.session.editingStep = EditingStep.Done;
-        ctx.session.registrationStep = RegistrationStep.Finish;
-      }
-      if (ctx.session.editingStep === EditingStep.Done) {
-        if (
-          ctx.session.userModel?.id && ctx.session.userData?.name &&
-          ctx.session.userData?.surname && ctx.session.userData?.gender &&
-          ctx.session?.userData.birthday && ctx.session?.userData.bio
-        ) {
-          const userId = ctx.session.userModel.id;
-          const userContext = await createUserContext(ctx.state, userId);
-          if (typeof userContext === "object" && userContext !== null) {
-            const bday = ctx.session.userData.birthday.split(".");
-
-            const model: ProfileModel = {
-              firstName: ctx.session.userData.name,
-              lastName: ctx.session.userData.surname,
-              gender: ctx.session.userData.gender,
-              birthday: DateTimeScalar.parseValue(
-                bday[2] + "-" + bday[1] + "-" + bday[0] + " 00:00:00",
-              ),
-              bio: ctx.session.userData.bio,
-            };
-            await updateUserProfile(userContext, model);
+        const tempBio = ctx.session.userData.bio;
+        ctx.session.userData.bio = bio;
+        try {
+          tryUpdateUserProfile(ctx);
+          const newMessage = await ctx.reply("Successfully edited!");
+          editingConfirmation(ctx);
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.editingStep = EditingStep.Done;
+          ctx.session.registrationStep = RegistrationStep.Finish;
+          await deleteUselessMessages(ctx);
+        } catch (e) {
+          ctx.session.userData.bio = tempBio;
+          const uselessMessage = await ctx.reply(
+            "Incorrect format. Try again (bio should be in an interval from 1 to 256 symbols)",
+          );
+          if (ctx.session.messageIdsForDeleting !== undefined) {
+            ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
           }
         }
-        ctx.session.editingStep = undefined;
       }
     }
   } else if (step == RegistrationStep.FirstName) {
@@ -663,24 +704,42 @@ composer.on("message", async (ctx: BotContext) => {
       ctx.chat.id,
       ctx.session.lastBotMessageId,
     );
-    ctx.session.userData.bio = ctx.message?.text;
-    ctx.session.registrationStep = RegistrationStep.Finish;
-    ctx.session.previousStep = RegistrationStep.Bio;
-    const newMessage = await ctx.reply(
-      `Nice to meet you, ${ctx.session.userData.name}!\nLet's finish the registration`,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "Confirm", callback_data: "confirm" }],
-            [{ text: "Back", callback_data: "back" }, {
-              text: "Cancel",
-              callback_data: "cancel",
-            }],
-          ],
+    const biography = ctx.message?.text;
+    if (biography !== undefined && biography?.length > 256) {
+      ctx.session.userData.bio = ctx.message?.text;
+      ctx.session.registrationStep = RegistrationStep.Finish;
+      ctx.session.previousStep = RegistrationStep.Bio;
+      const newMessage = await ctx.reply(
+        `Nice to meet you, ${ctx.session.userData.name}!\nLet's finish the registration`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "Confirm", callback_data: "confirm" }],
+              [{ text: "Back", callback_data: "back" }, {
+                text: "Cancel",
+                callback_data: "cancel",
+              }],
+            ],
+          },
         },
-      },
-    );
-    ctx.session.lastBotMessageId = newMessage.message_id;
+      );
+      ctx.session.lastBotMessageId = newMessage.message_id;
+    } else {
+      const newMessage = await ctx.reply(
+        "Incorrect format. Try again (bio should be in an interval from 1 to 256 symbols).",
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "Back", callback_data: "back" }, {
+                text: "Cancel",
+                callback_data: "cancel",
+              }],
+            ],
+          },
+        },
+      );
+      ctx.session.lastBotMessageId = newMessage.message_id;
+    }
   } else if (
     ctx.session.fieldStep === FieldStep.PROCESS && ctx.session.userModel &&
     ctx.session.fieldsIds && ctx.session.fieldCurrentIndex !== undefined &&
@@ -1094,7 +1153,11 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
       [{ text: "Edit profile", callback_data: "edit" }],
     ];
 
-    const newMessage = await ctx.reply(`${userData}`);
+    const newMessage = await ctx.reply(`${userData}`, {
+      reply_markup: {
+        inline_keyboard: keyboard,
+      },
+    });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
   } else if (
