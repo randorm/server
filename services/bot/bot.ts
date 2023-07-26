@@ -102,6 +102,24 @@ composer.command("start", async (ctx: BotContext) => {
   }
 });
 
+composer.command("returnsomething", async (ctx: BotContext) => {
+  if (ctx.session.userModel) {
+    ctx.session.userModel = await user(ctx.state, {
+      userId: ctx.session.userModel.id,
+    });
+    ctx.session.userData = {
+      name: ctx.session.userModel.profile.firstName,
+      surname: ctx.session.userModel.profile.lastName,
+      gender: ctx.session.userModel.profile.gender,
+      birthday: JSON.stringify(ctx.session.userModel.profile.birthday),
+      bio: ctx.session.userModel.profile.bio,
+    };
+    await ctx.reply("DONE!!!");
+  } else {
+    await ctx.reply("Done.");
+  }
+});
+
 // Command for starting answering the questions for distribution.
 composer.command("answer", async (ctx: BotContext) => {
   // For doing that user need to have distribution ID (it's not in graphql, but in session right now)
@@ -619,9 +637,7 @@ composer.on("message", async (ctx: BotContext) => {
         const tempBio = ctx.session.userData.bio;
         ctx.session.userData.bio = bio;
         try {
-          await ctx.reply(JSON.stringify(ctx.session.userModel));
           await tryUpdateUserProfile(ctx);
-          await ctx.reply(JSON.stringify(ctx.session.userModel));
           const newMessage = await ctx.reply("Successfully edited!");
           await editingConfirmation(ctx);
           ctx.session.lastBotMessageId = newMessage.message_id;
