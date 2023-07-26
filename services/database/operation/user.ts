@@ -65,20 +65,6 @@ export async function userDistributionsIds(
   return res.value;
 }
 
-export async function userSubscriptionIds(
-  { user, kv }: UserContext,
-): Promise<Set<number>> {
-  const res = await kv.get<Set<number>>(["user:subscription_ids", user.id]);
-
-  if (res.value === null) {
-    throw new GraphQLError(
-      `Subscription IDs of User with ID ${user.id} not found`,
-    );
-  }
-
-  return res.value;
-}
-
 export async function createUser(
   { kv }: ServerContext,
   { telegramId, username, profile }: {
