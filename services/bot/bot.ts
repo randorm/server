@@ -531,7 +531,10 @@ composer.on("message", async (ctx: BotContext) => {
         step2 == EditingStep.FirstNameEdition && ctx.session.lastBotMessageId
       ) {
         const name = ctx.message?.text;
-        if (ctx.session.userData && ctx.chat) {
+        if (
+          ctx.session.userData && ctx.chat && name !== undefined &&
+          name.length <= 64
+        ) {
           await ctx.api.deleteMessage(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
@@ -563,7 +566,10 @@ composer.on("message", async (ctx: BotContext) => {
         step2 == EditingStep.SecondNameEdition && ctx.session.lastBotMessageId
       ) {
         const name = ctx.message?.text;
-        if (ctx.session.userData && ctx.chat) {
+        if (
+          ctx.session.userData && ctx.chat && name !== undefined &&
+          name.length <= 64
+        ) {
           await ctx.api.deleteMessage(
             ctx.chat.id,
             ctx.session.lastBotMessageId,
@@ -630,27 +636,29 @@ composer.on("message", async (ctx: BotContext) => {
         ctx.session.lastBotMessageId
       ) {
         const bio = ctx.message?.text;
-        await ctx.api.deleteMessage(
-          ctx.chat.id,
-          ctx.session.lastBotMessageId,
-        );
-        const tempBio = ctx.session.userData.bio;
-        ctx.session.userData.bio = bio;
-        try {
-          await tryUpdateUserProfile(ctx);
-          const newMessage = await ctx.reply("Successfully edited!");
-          await editingConfirmation(ctx);
-          ctx.session.lastBotMessageId = newMessage.message_id;
-          ctx.session.editingStep = EditingStep.Done;
-          ctx.session.registrationStep = RegistrationStep.Finish;
-          await deleteUselessMessages(ctx);
-        } catch (e) {
-          ctx.session.userData.bio = tempBio;
-          const uselessMessage = await ctx.reply(
-            "Incorrect format. Try again (bio should be in an interval from 1 to 256 symbols)",
+        if (bio !== undefined && bio.length <= 256) {
+          await ctx.api.deleteMessage(
+            ctx.chat.id,
+            ctx.session.lastBotMessageId,
           );
-          if (ctx.session.messageIdsForDeleting !== undefined) {
-            ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
+          const tempBio = ctx.session.userData.bio;
+          ctx.session.userData.bio = bio;
+          try {
+            await tryUpdateUserProfile(ctx);
+            const newMessage = await ctx.reply("Successfully edited!");
+            await editingConfirmation(ctx);
+            ctx.session.lastBotMessageId = newMessage.message_id;
+            ctx.session.editingStep = EditingStep.Done;
+            ctx.session.registrationStep = RegistrationStep.Finish;
+            await deleteUselessMessages(ctx);
+          } catch (e) {
+            ctx.session.userData.bio = tempBio;
+            const uselessMessage = await ctx.reply(
+              "Incorrect format. Try again (bio should be in an interval from 1 to 256 symbols)",
+            );
+            if (ctx.session.messageIdsForDeleting !== undefined) {
+              ctx.session.messageIdsForDeleting.push(uselessMessage.message_id);
+            }
           }
         }
       }
@@ -1160,11 +1168,17 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     await editingConfirmation(ctx);
     ctx.session.registrationStep = RegistrationStep.Finish;
     ctx.session.editingStep = EditingStep.Done;
-  } else if (data === "profile" && ctx.chat && ctx.session.lastBotMessageId) {
+  } else if (
+    data === "profile" && ctx.chat && ctx.session.lastBotMessageId &&
+    ctx.session.userModel && ctx.session.userData !== undefined
+  ) {
     await ctx.api.deleteMessage(
       ctx.chat.id,
       ctx.session.lastBotMessageId,
     );
+    ctx.session.userData.name = ctx.session.userModel.profile.firstName;
+    ctx.session.userData.surname = ctx.session.userModel.profile.lastName;
+    ctx.session.userData.bio = ctx.session.userModel.profile.bio;
     const userData = getUserData(ctx);
     const keyboard = [
       [{ text: "Edit profile", callback_data: "edit" }],
