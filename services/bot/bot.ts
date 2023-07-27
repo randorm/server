@@ -174,7 +174,7 @@ composer.command("answer", async (ctx: BotContext) => {
   }
 });
 
-// Run WEBAPP.
+// Run WEBAPP with feed.
 composer.command("feed", async (ctx: BotContext) => {
   if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
@@ -189,7 +189,26 @@ composer.command("feed", async (ctx: BotContext) => {
       },
     );
   } else if (ctx.chat) {
-    await ctx.api.sendMessage(ctx.chat.id, "Wait for the link, please");
+    await ctx.api.sendMessage(ctx.chat.id, "Oops, you don't allow to do it.");
+  }
+});
+
+// Run WEBAPP with subscriptions.
+composer.command("subscriptions", async (ctx: BotContext) => {
+  if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
+    const inlineKeyboardWebApp = new InlineKeyboard().webApp(
+      "Open",
+      "https://randorm.com/subscriptions",
+    );
+    await ctx.api.sendMessage(
+      ctx.chat.id,
+      "Let's open your subscriptions.",
+      {
+        reply_markup: inlineKeyboardWebApp,
+      },
+    );
+  } else if (ctx.chat) {
+    await ctx.api.sendMessage(ctx.chat.id, "Oops, you don't allow to do it.");
   }
 });
 
