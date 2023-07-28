@@ -78,7 +78,8 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLInt),
     },
     telegramId: {
-      type: new GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLString),
+      resolve: ({ telegramId }) => String(telegramId),
     },
     username: {
       type: new GraphQLNonNull(GraphQLString),
