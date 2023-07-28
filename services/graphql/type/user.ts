@@ -8,7 +8,7 @@ import {
   GraphQLString,
 } from "../../../deps.ts";
 import { getMany, map } from "../../../utils/mod.ts";
-import { assertOwner } from "../../database/assert/mod.ts";
+import { assertAuthenticated, assertOwner } from "../../database/assert/mod.ts";
 import type {
   AnswerModel,
   DistributionModel,
@@ -77,6 +77,10 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     id: {
       type: new GraphQLNonNull(GraphQLInt),
     },
+    telegramId: {
+      type: new GraphQLNonNull(GraphQLString),
+      resolve: ({ telegramId }) => String(telegramId),
+    },
     username: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -118,10 +122,14 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
-        assertOwner(user, id);
+      async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
 
-        const viewedIdsRes = await kv.get<Set<number>>(["user:viewed_ids", id]);
+        const viewedIdsRes = await context.kv.get<Set<number>>([
+          "user:viewed_ids",
+          id,
+        ]);
 
         if (viewedIdsRes.value === null) {
           throw new GraphQLError(`Viewed IDs of User with ID ${id} not found`);
@@ -129,7 +137,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
 
         const viewed = await getMany<UserModel>(
           map((userId) => ["user", userId], viewedIdsRes.value),
-          kv,
+          context.kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
 
@@ -156,10 +164,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
-        assertOwner(user, id);
+      async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
 
-        const subscriptionIdsRes = await kv.get<Set<number>>([
+        const subscriptionIdsRes = await context.kv.get<Set<number>>([
           "user:subscription_ids",
           id,
         ]);
@@ -172,7 +181,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
 
         const subscriptions = await getMany<UserModel>(
           map((userId) => ["user", userId], subscriptionIdsRes.value),
-          kv,
+          context.kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
 
@@ -199,10 +208,11 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
           new GraphQLNonNull(UserNode),
         ),
       ),
-      async resolve({ id }, _args, { user, kv }): Promise<UserModel[]> {
-        assertOwner(user, id);
+      async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
 
-        const subscriberIdsRes = await kv.get<Set<number>>([
+        const subscriberIdsRes = await context.kv.get<Set<number>>([
           "user:subscriber_ids",
           id,
         ]);
@@ -215,7 +225,7 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
 
         const subscribers = await getMany<UserModel>(
           map((userId) => ["user", userId], subscriberIdsRes.value),
-          kv,
+          context.kv,
           ([_part, userId]) => `User with ID ${userId} not found`,
         );
 
