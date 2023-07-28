@@ -195,7 +195,7 @@ composer.command("feed", async (ctx: BotContext) => {
 
 // Run WEBAPP with subscriptions.
 composer.command("subscriptions", async (ctx: BotContext) => {
-  if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
+  if (ctx.chat && ctx.session.registrationStep === RegistrationStep.Finish) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
       "Open",
       "https://randorm.com/subscriptions",
