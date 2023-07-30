@@ -11,6 +11,7 @@ export function makeInlineKeyboard(
   if (needBack === true) {
     inlineKeyboard.push([{ text: "Back", callback_data: "back_field" }]);
   }
+  inlineKeyboard.push([{ text: "Cancel", callback_data: "cancel_field" }]);
 
   return inlineKeyboard;
 }

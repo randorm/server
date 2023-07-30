@@ -410,14 +410,23 @@ async function askField(ctx: BotContext) {
     if (currentField.type === FieldType.TEXT) {
       ctx.session.fieldType = FieldType.TEXT;
       if (ctx.session.isFirstField === undefined) {
-        const newMessage = await ctx.reply(currentField.question);
+        const newMessage = await ctx.reply(currentField.question, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "Cancel", callback_data: "cancel_field" }],
+            ],
+          },
+        });
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
       } else {
         const newMessage = await ctx.reply(currentField.question, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "Back", callback_data: "back_field" }],
+              [{ text: "Back", callback_data: "back_field" }, {
+                text: "Cancel",
+                callback_data: "cancel_field",
+              }],
             ],
           },
         });
@@ -1199,6 +1208,15 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
+  } else if (data === "cancel_field") {
+    if (ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS) {
+      await deleteUselessMessages(ctx);
+      ctx.session.fieldStep = undefined;
+      await ctx.api.sendMessage(
+        ctx.chat.id,
+        "Done :)",
+      );
+    }
   } else if (
     data === "back_field" && ctx.session.removedFieldIds !== undefined &&
     ctx.session.removedFieldIds.length >= 1 && ctx.session.fieldsIds &&
