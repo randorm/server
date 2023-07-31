@@ -93,6 +93,11 @@ composer.command("start", async (ctx: BotContext) => {
       const keyboard = [
         [{ text: "View profile", callback_data: "profile" }],
       ];
+      if (ctx.session.userModel) {
+        ctx.session.userModel = await user(ctx.state, {
+          userId: ctx.session.userModel.id,
+        });
+      }
       const newMessage = await ctx.reply(
         `Hi, hi, hi! Is something wrong?`,
         {
@@ -272,35 +277,40 @@ composer.command("cancel", async (ctx: BotContext) => {
 });
 
 composer.command("make_editor", async (ctx: BotContext) => {
-  if (ctx.session.userModel && ctx.session.userModel.role === Role.EDITOR) {
-    const args = ctx.message!.text!.split(" ");
+  if (ctx.session.userModel) {
+    ctx.session.userModel = await user(ctx.state, {
+      userId: ctx.session.userModel.id,
+    });
+    if (ctx.session.userModel.role === Role.EDITOR) {
+      const args = ctx.message!.text!.split(" ");
 
-    if (args.length !== 2) {
-      await ctx.reply("Nothing has changed. Use: /make_editor <user_id>");
-      return;
-    }
+      if (args.length !== 2) {
+        await ctx.reply("Nothing has changed. Use: /make_editor <user_id>");
+        return;
+      }
 
-    const userId = parseInt(args[1], 10);
-    if (isNaN(userId)) {
-      await ctx.reply(`ID: ${args[1]} is not a number`);
-      return;
-    }
+      const userId = parseInt(args[1], 10);
+      if (isNaN(userId)) {
+        await ctx.reply(`ID: ${args[1]} is not a number`);
+        return;
+      }
 
-    const userContext = await createUserContext(
-      ctx.state,
-      ctx.session.userModel.id,
-    );
-
-    try {
-      ctx.session.userModel = await makeEditor(userContext, { userId: userId });
-      await ctx.reply(
-        `Success! You changed the role of user with ID ${userId} to EDITOR`,
+      const userContext = await createUserContext(
+        ctx.state,
+        ctx.session.userModel.id,
       );
-    } catch (error) {
-      await ctx.reply(`Failed: ${error.message}`);
+
+      try {
+        await makeEditor(userContext, { userId: userId });
+        await ctx.reply(
+          `Success! You changed the role of user with ID ${userId} to EDITOR`,
+        );
+      } catch (error) {
+        await ctx.reply(`Failed: ${error.message}`);
+      }
+    } else {
+      await ctx.reply("You are not allowed to do this.");
     }
-  } else {
-    await ctx.reply("You are not allowed to do this.");
   }
 });
 
