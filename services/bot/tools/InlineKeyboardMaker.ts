@@ -10,10 +10,10 @@ export function makeInlineKeyboard(
     inlineKeyboard.push([{ text: answers[i], callback_data: answers[i] }]);
   }
   if (needBack === true && isFieldEditing === true) {
-    inlineKeyboard.push([{ text: "Skip", callback_data: "next_field" }, {
+    inlineKeyboard.push([{
       text: "Back",
       callback_data: "back_field",
-    }]);
+    }, { text: "Skip", callback_data: "next_field" }]);
   } else if (needBack === true) {
     inlineKeyboard.push([{ text: "Back", callback_data: "back_field" }]);
   } else {
