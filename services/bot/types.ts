@@ -8,6 +8,7 @@ export interface SessionData {
   lastBotMessageId?: number;
   userModel?: UserModel;
   fieldStep?: FieldStep;
+  isFieldEditing?: boolean;
   fieldAmount?: number;
   fieldCurrentIndex?: number;
   fieldsIds?: number[];

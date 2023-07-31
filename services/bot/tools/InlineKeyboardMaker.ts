@@ -1,10 +1,14 @@
 import { InlineButton } from "../../bot/mod.ts";
 
 export function makeInlineKeyboard(
+  isFieldEditing: boolean | undefined,
   answers: readonly string[],
   needBack: boolean,
 ): InlineButton[][] {
   const inlineKeyboard: InlineButton[][] = [];
+  if (isFieldEditing === true) {
+    inlineKeyboard.push([{ text: "Next (skip)", callback_data: "next_field" }]);
+  }
   for (let i = 0; i < answers.length; i++) {
     inlineKeyboard.push([{ text: answers[i], callback_data: answers[i] }]);
   }
