@@ -301,7 +301,11 @@ composer.command("make_editor", async (ctx: BotContext) => {
       );
 
       try {
-        await makeEditor(userContext, { userId: userId });
+        const editedUser = await makeEditor(userContext, { userId: userId });
+        await ctx.api.sendMessage(
+          editedUser.telegramId,
+          `@${editedUser.username} changed your role to EDITOR`,
+        );
         await ctx.reply(
           `Success! You changed the role of user with ID ${userId} to EDITOR`,
         );
