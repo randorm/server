@@ -269,6 +269,20 @@ composer.command("cancel", async (ctx: BotContext) => {
   }
 });
 
+composer.command("make_editor", async (ctx: BotContext) => {
+  const args = ctx.message!.text!.split(' ');
+
+  if (args.length !== 2) { 
+    await ctx.reply('Nothing has changed. Use: /make_editor <user_id>');
+    return;
+  }
+
+  const userId = args[1];
+
+  await ctx.reply(`ID: ${userId}`);
+
+});
+
 async function deleteUselessMessages(ctx: BotContext) {
   if (
     ctx.session.messageIdsForDeleting && ctx.chat &&
