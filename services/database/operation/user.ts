@@ -7,6 +7,7 @@ import type {
   UnsubscribeUpdateModel,
 } from "../../graphql/update/mod.ts";
 import { assertUserProfile } from "../assert/mod.ts";
+import { assertEditor } from "../assert/user.ts";
 import type { ProfileModel, UserModel } from "../model/mod.ts";
 import { Role } from "../model/mod.ts";
 
@@ -124,6 +125,36 @@ export async function createUser(
   }
 
   return user;
+}
+
+export async function makeEditor(
+  { user, kv }: UserContext,
+  { userId }: { userId: number },
+): Promise<UserModel> {
+  assertEditor(user);
+
+  const res = await kv.get<UserModel>(["user", userId]);
+
+  if (res.value === null) {
+    throw new GraphQLError(`User with ID ${userId} not found`);
+  }
+
+  const update: UserModel = {
+    ...res.value,
+    role: Role.EDITOR,
+    updatedAt: new Date(),
+  };
+
+  const commitRes = await kv.atomic()
+    .check(res)
+    .set(["user", userId], update)
+    .commit();
+
+  if (!commitRes.ok) {
+    throw new Error(`Failed to make User with ID ${userId} an Editor`);
+  }
+
+  return update;
 }
 
 export async function updateUserProfile(
