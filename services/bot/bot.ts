@@ -294,6 +294,13 @@ composer.command("make_editor", async (ctx: BotContext) => {
         await ctx.reply(`ID: ${args[1]} is not a number`);
         return;
       }
+      
+      if (userId === ctx.session.userModel.id) {
+        await ctx.reply(`You are trying to edit yourself`);
+        return;
+      }
+
+
 
       const userContext = await createUserContext(
         ctx.state,
@@ -301,10 +308,15 @@ composer.command("make_editor", async (ctx: BotContext) => {
       );
 
       try {
+        const userM = await user(ctx.state, { userId: userId });
+        if (userM.role === Role.EDITOR) {
+          await ctx.reply(`User with ID ${userM.id} is already EDITOR`);
+          return;
+        }
         const editedUser = await makeEditor(userContext, { userId: userId });
         await ctx.api.sendMessage(
           editedUser.telegramId,
-          `@${editedUser.username} changed your role to EDITOR`,
+          `@${ctx.session.userModel.username} changed your role to EDITOR`,
         );
         await ctx.reply(
           `Success! You changed the role of user with ID ${userId} to EDITOR`,
