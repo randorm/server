@@ -484,7 +484,7 @@ async function askField(ctx: BotContext) {
             {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: "Next (skip)", callback_data: "next_field" }],
+                  [{ text: "Skip", callback_data: "next_field" }],
                   [{ text: "Cancel", callback_data: "cancel_field" }],
                 ],
               },
@@ -513,8 +513,10 @@ async function askField(ctx: BotContext) {
             {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: "Next (skip)", callback_data: "next_field" }],
-                  [{ text: "Back", callback_data: "back_field" }],
+                  [{ text: "Skip", callback_data: "next_field" }, {
+                    text: "Back",
+                    callback_data: "back_field",
+                  }],
                   [{
                     text: "Cancel",
                     callback_data: "cancel_field",
@@ -1391,7 +1393,8 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         }
       }
       if (
-        (index !== -1 || ctx.session.isFieldEditing == true) && ctx.session.userModel && ctx.session.lastBotMessageId &&
+        (index !== -1 || ctx.session.isFieldEditing == true) &&
+        ctx.session.userModel && ctx.session.lastBotMessageId &&
         ctx.chat && ctx.session.removedFieldIds !== undefined
       ) {
         if (data !== "next_field") {
@@ -1419,7 +1422,10 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           ctx.session.fieldsIds.length <= 1 &&
           ctx.session.distributionId !== undefined
         ) {
-          if (ctx.session.isFieldEditing === false || ctx.session.isFieldEditing === undefined) {
+          if (
+            ctx.session.isFieldEditing === false ||
+            ctx.session.isFieldEditing === undefined
+          ) {
             await ctx.reply(
               "Yooo congratulations, you finished! Now use /feed",
             );
