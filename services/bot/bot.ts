@@ -1,4 +1,4 @@
-import { Composer, InlineKeyboard } from "../../deps.ts";
+import { Composer, GraphQLError, InlineKeyboard } from "../../deps.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
 import { difference } from "../../utils/iter.ts";
@@ -9,6 +9,7 @@ import {
 import { field } from "../database/operation/field.ts";
 import {
   createUser,
+  makeEditor,
   updateUserProfile,
   user,
   userDistributionsIds,
@@ -25,6 +26,7 @@ import {
   FieldType,
   Gender,
   ProfileModel,
+  Role,
   UserContext,
 } from "./mod.ts";
 import { answer } from "../database/operation/answer.ts";
@@ -270,17 +272,36 @@ composer.command("cancel", async (ctx: BotContext) => {
 });
 
 composer.command("make_editor", async (ctx: BotContext) => {
-  const args = ctx.message!.text!.split(' ');
+  if (ctx.session.userModel && ctx.session.userModel.role === Role.EDITOR) {
+    const args = ctx.message!.text!.split(" ");
 
-  if (args.length !== 2) { 
-    await ctx.reply('Nothing has changed. Use: /make_editor <user_id>');
-    return;
+    if (args.length !== 2) {
+      await ctx.reply("Nothing has changed. Use: /make_editor <user_id>");
+      return;
+    }
+
+    const userId = parseInt(args[1], 10);
+    if (isNaN(userId)) {
+      await ctx.reply(`ID: ${args[1]} is not a number`);
+      return;
+    }
+
+    const userContext = await createUserContext(
+      ctx.state,
+      ctx.session.userModel.id,
+    );
+
+    try {
+      ctx.session.userModel = await makeEditor(userContext, { userId: userId });
+      await ctx.reply(
+        `Success! You changed the role of user with ID ${userId} to EDITOR`,
+      );
+    } catch (error) {
+      await ctx.reply(`Failed: ${error.message}`);
+    }
+  } else {
+    await ctx.reply("You are not allowed to do this.");
   }
-
-  const userId = args[1];
-
-  await ctx.reply(`ID: ${userId}`);
-
 });
 
 async function deleteUselessMessages(ctx: BotContext) {
