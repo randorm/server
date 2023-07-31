@@ -20,12 +20,14 @@ import {
   joinDistribution,
 } from "../database/operation/distribution.ts";
 import {
+  AnswerModel,
   FieldModel,
   FieldType,
   Gender,
   ProfileModel,
   UserContext,
 } from "./mod.ts";
+import { answer } from "../database/operation/answer.ts";
 import { makeInlineKeyboard } from "./tools/InlineKeyboardMaker.ts";
 import { createUserContext } from "./tools/authentificate.ts";
 import { isValidDate } from "./tools/validDateTemp.ts";
@@ -109,6 +111,7 @@ composer.command("answer", async (ctx: BotContext) => {
   ctx.session.previousMessagesIdsForFields = [];
   ctx.session.removedFieldIds = [];
   ctx.session.isFirstField = undefined;
+  ctx.session.isFieldEditing = false;
   if (ctx.session.distributionId && !ctx.session.answeredQuestions) {
     const newMessage = await ctx.reply(
       "Let's start answering the questions :)",
@@ -174,6 +177,44 @@ composer.command("answer", async (ctx: BotContext) => {
   }
 });
 
+composer.command("edit_answers", async (ctx: BotContext) => {
+  if (ctx.session.distributionId && ctx.session.userModel) {
+    ctx.session.previousMessagesIdsForFields = [];
+    ctx.session.removedFieldIds = [];
+    ctx.session.isFirstField = undefined;
+    const userId = ctx.session.userModel.id;
+    const userContext: UserContext = await createUserContext(
+      ctx.state,
+      userId,
+    );
+    const answeredIds: Set<number> = await userFieldIds(
+      userContext,
+    );
+    ctx.session.fieldsIds = [...answeredIds];
+    ctx.session.fieldAmount = ctx.session.fieldsIds.length;
+    if (answeredIds != null && ctx.session.fieldAmount > 0) {
+      const newMessage = await ctx.reply(
+        "Heeeeeey, wanna edit something? Let's do it!",
+      );
+      ctx.session.lastBotMessageId = newMessage.message_id;
+      ctx.session.fieldStep = FieldStep.PROCESS;
+      ctx.session.fieldCurrentIndex = 0;
+      ctx.session.isFieldEditing = true;
+      await askField(ctx);
+    } else {
+      const newMessage = await ctx.reply(
+        "How did you get there? You have no answers. Come back again after /answer",
+      );
+      ctx.session.lastBotMessageId = newMessage.message_id;
+      ctx.session.fieldStep = FieldStep.FINISH;
+    }
+  } else {
+    await ctx.reply(
+      "It seems you didn't get the link or didn't /answer any questions :)",
+    );
+  }
+});
+
 // Run WEBAPP with feed.
 composer.command("feed", async (ctx: BotContext) => {
   if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
@@ -189,13 +230,16 @@ composer.command("feed", async (ctx: BotContext) => {
       },
     );
   } else if (ctx.chat) {
-    await ctx.api.sendMessage(ctx.chat.id, "Oops, you don't allow to do it.");
+    await ctx.api.sendMessage(
+      ctx.chat.id,
+      "Oops, you don't allow to do it. Wait for the link or /answer all questions :)",
+    );
   }
 });
 
 // Run WEBAPP with subscriptions.
 composer.command("subscriptions", async (ctx: BotContext) => {
-  if (ctx.chat && ctx.session.fieldStep === FieldStep.FINISH) {
+  if (ctx.chat && ctx.session.registrationStep === RegistrationStep.Finish) {
     const inlineKeyboardWebApp = new InlineKeyboard().webApp(
       "Open",
       "https://randorm.com/subscriptions",
@@ -208,7 +252,10 @@ composer.command("subscriptions", async (ctx: BotContext) => {
       },
     );
   } else if (ctx.chat) {
-    await ctx.api.sendMessage(ctx.chat.id, "Oops, you don't allow to do it.");
+    await ctx.api.sendMessage(
+      ctx.chat.id,
+      "Oops, you don't allow to do it. Maybe register before starting using this command?",
+    );
   }
 });
 
@@ -407,40 +454,129 @@ async function askField(ctx: BotContext) {
     const currentField: FieldModel = await field(ctx.state, {
       fieldId: currentFieldId,
     });
+    let additionalInfo = "";
+    if (ctx.session.isFieldEditing === true && ctx.session.userModel) {
+      const currentAnswer: AnswerModel = await answer(ctx.state, {
+        fieldId: currentFieldId,
+        respondentId: ctx.session.userModel.id,
+      });
+      if (currentAnswer.type === FieldType.TEXT) {
+        additionalInfo += "\nYour answer: " + currentAnswer.value;
+      } else if (currentAnswer.type === FieldType.CHOICE) {
+        const ind = currentAnswer.indices.values().next().value;
+        if (ind === 0) {
+          additionalInfo += "\nYour previous answer: A";
+        } else if (ind === 1) {
+          additionalInfo += "\nYour previous answer: B";
+        } else if (ind === 2) {
+          additionalInfo += "\nYour previous answer: C";
+        } else if (ind === 3) {
+          additionalInfo += "\nYour previous answer: D";
+        }
+      }
+    }
     if (currentField.type === FieldType.TEXT) {
       ctx.session.fieldType = FieldType.TEXT;
       if (ctx.session.isFirstField === undefined) {
-        const newMessage = await ctx.reply(currentField.question);
-        ctx.session.lastBotMessageId = newMessage.message_id;
-        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        if (ctx.session.isFieldEditing === true) {
+          const newMessage = await ctx.reply(
+            currentField.question + additionalInfo,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "Skip", callback_data: "next_field" }],
+                  [{ text: "Cancel", callback_data: "cancel_field" }],
+                ],
+              },
+            },
+          );
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        } else {
+          const newMessage = await ctx.reply(
+            currentField.question + additionalInfo,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "Cancel", callback_data: "cancel_field" }],
+                ],
+              },
+            },
+          );
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        }
       } else {
-        const newMessage = await ctx.reply(currentField.question, {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "Back", callback_data: "back_field" }],
-            ],
-          },
-        });
-        ctx.session.lastBotMessageId = newMessage.message_id;
-        ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        if (ctx.session.isFieldEditing === true) {
+          const newMessage = await ctx.reply(
+            currentField.question + additionalInfo,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{
+                    text: "Back",
+                    callback_data: "back_field",
+                  }, { text: "Skip", callback_data: "next_field" }],
+                  [{
+                    text: "Cancel",
+                    callback_data: "cancel_field",
+                  }],
+                ],
+              },
+            },
+          );
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        } else {
+          const newMessage = await ctx.reply(
+            currentField.question + additionalInfo,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "Back", callback_data: "back_field" }],
+                  [{
+                    text: "Cancel",
+                    callback_data: "cancel_field",
+                  }],
+                ],
+              },
+            },
+          );
+          ctx.session.lastBotMessageId = newMessage.message_id;
+          ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
+        }
       }
     } else if (currentField.type === FieldType.CHOICE) {
       const options: readonly string[] = currentField.options;
       ctx.session.fieldType = FieldType.CHOICE;
       if (ctx.session.isFirstField === undefined) {
-        const newMessage = await ctx.reply(currentField.question, {
-          reply_markup: {
-            inline_keyboard: makeInlineKeyboard(options, false),
+        const newMessage = await ctx.reply(
+          currentField.question + additionalInfo,
+          {
+            reply_markup: {
+              inline_keyboard: makeInlineKeyboard(
+                ctx.session.isFieldEditing,
+                options,
+                false,
+              ),
+            },
           },
-        });
+        );
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
       } else {
-        const newMessage = await ctx.reply(currentField.question, {
-          reply_markup: {
-            inline_keyboard: makeInlineKeyboard(options, true),
+        const newMessage = await ctx.reply(
+          currentField.question + additionalInfo,
+          {
+            reply_markup: {
+              inline_keyboard: makeInlineKeyboard(
+                ctx.session.isFieldEditing,
+                options,
+                true,
+              ),
+            },
           },
-        });
+        );
         ctx.session.lastBotMessageId = newMessage.message_id;
         ctx.session.previousMessagesIdsForFields.push(newMessage.message_id);
       }
@@ -788,6 +924,9 @@ composer.on("message", async (ctx: BotContext) => {
       fieldId: ctx.session.fieldsIds[ctx.session.fieldCurrentIndex],
       value: ctx.message?.text,
     });
+    if (ctx.session.isFieldEditing === true) {
+      await ctx.reply("Successfully changed!");
+    }
     if (
       ctx.session.fieldsIds.length <= 1 &&
       ctx.session.distributionId !== undefined
@@ -1199,6 +1338,15 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
     });
 
     ctx.session.lastBotMessageId = newMessage.message_id;
+  } else if (data === "cancel_field") {
+    if (ctx.chat && ctx.session.fieldStep === FieldStep.PROCESS) {
+      await deleteUselessMessages(ctx);
+      ctx.session.fieldStep = undefined;
+      await ctx.api.sendMessage(
+        ctx.chat.id,
+        "Done :)",
+      );
+    }
   } else if (
     data === "back_field" && ctx.session.removedFieldIds !== undefined &&
     ctx.session.removedFieldIds.length >= 1 && ctx.session.fieldsIds &&
@@ -1245,18 +1393,24 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         }
       }
       if (
-        index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
+        (index !== -1 || ctx.session.isFieldEditing == true) &&
+        ctx.session.userModel && ctx.session.lastBotMessageId &&
         ctx.chat && ctx.session.removedFieldIds !== undefined
       ) {
-        const userContext: UserContext = await createUserContext(
-          ctx.state,
-          ctx.session.userModel.id,
-        );
-        const ans: readonly number[] = [index];
-        await setChoiceAnswer(userContext, {
-          fieldId: currentFieldId,
-          indices: ans,
-        });
+        if (data !== "next_field") {
+          const userContext: UserContext = await createUserContext(
+            ctx.state,
+            ctx.session.userModel.id,
+          );
+          const ans: readonly number[] = [index];
+          await setChoiceAnswer(userContext, {
+            fieldId: currentFieldId,
+            indices: ans,
+          });
+          if (ctx.session.isFieldEditing === true) {
+            await ctx.reply("Successfully changed!");
+          }
+        }
         await ctx.api.editMessageReplyMarkup(
           ctx.chat.id,
           ctx.session.lastBotMessageId,
@@ -1268,17 +1422,50 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           ctx.session.fieldsIds.length <= 1 &&
           ctx.session.distributionId !== undefined
         ) {
-          await ctx.reply("Yooo congratulations, you finished! Now use /feed");
-          ctx.session.fieldStep = FieldStep.FINISH;
-          ctx.session.answeredQuestions = true;
-          await joinDistribution(userContext, {
-            distributionId: ctx.session.distributionId,
-          });
+          if (
+            ctx.session.isFieldEditing === false ||
+            ctx.session.isFieldEditing === undefined
+          ) {
+            await ctx.reply(
+              "Yooo congratulations, you finished! Now use /feed",
+            );
+            ctx.session.fieldStep = FieldStep.FINISH;
+            ctx.session.answeredQuestions = true;
+            await joinDistribution(
+              await createUserContext(
+                ctx.state,
+                ctx.session.userModel.id,
+              ),
+              {
+                distributionId: ctx.session.distributionId,
+              },
+            );
+          } else {
+            await ctx.reply("Yooo congratulations, you ended with editing!");
+            ctx.session.fieldStep = FieldStep.FINISH;
+            ctx.session.isFieldEditing = false;
+          }
         } else {
           ctx.session.removedFieldIds.push(ctx.session.fieldsIds[0]);
           ctx.session.fieldsIds.shift();
           await askField(ctx);
         }
+      }
+    } else if (
+      currentField.type === FieldType.TEXT && data === "next_field" &&
+      ctx.session.removedFieldIds !== undefined
+    ) {
+      if (
+        ctx.session.fieldsIds.length <= 1 &&
+        ctx.session.distributionId !== undefined
+      ) {
+        await ctx.reply("Yooo congratulations, you ended with editing!");
+        ctx.session.fieldStep = FieldStep.FINISH;
+        ctx.session.isFieldEditing = false;
+      } else {
+        ctx.session.removedFieldIds.push(ctx.session.fieldsIds[0]);
+        ctx.session.fieldsIds.shift();
+        await askField(ctx);
       }
     }
   }
