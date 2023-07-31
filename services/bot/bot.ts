@@ -1404,22 +1404,22 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
             fieldId: currentFieldId,
             indices: ans,
           });
+          if (ctx.session.isFieldEditing === true) {
+            await ctx.reply("Successfully changed!");
+          }
         }
-        if (ctx.session.isFieldEditing === true) {
-          await ctx.reply("Successfully changed!");
-        }
+        await ctx.api.editMessageReplyMarkup(
+          ctx.chat.id,
+          ctx.session.lastBotMessageId,
+          {
+            reply_markup: undefined,
+          },
+        );
         if (
           ctx.session.fieldsIds.length <= 1 &&
           ctx.session.distributionId !== undefined
         ) {
           if (data !== "next_field") {
-            await ctx.api.editMessageReplyMarkup(
-              ctx.chat.id,
-              ctx.session.lastBotMessageId,
-              {
-                reply_markup: undefined,
-              },
-            );
             await ctx.reply(
               "Yooo congratulations, you finished! Now use /feed",
             );
