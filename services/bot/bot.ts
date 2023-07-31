@@ -1391,7 +1391,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
         }
       }
       if (
-        index !== -1 && ctx.session.userModel && ctx.session.lastBotMessageId &&
+        (index !== -1 || ctx.session.isFieldEditing == true) && ctx.session.userModel && ctx.session.lastBotMessageId &&
         ctx.chat && ctx.session.removedFieldIds !== undefined
       ) {
         if (data !== "next_field") {
