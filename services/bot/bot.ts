@@ -1419,7 +1419,7 @@ composer.on("callback_query:data", async (ctx: BotContext) => {
           ctx.session.fieldsIds.length <= 1 &&
           ctx.session.distributionId !== undefined
         ) {
-          if (data !== "next_field") {
+          if (ctx.session.isFieldEditing === false || ctx.session.isFieldEditing === undefined) {
             await ctx.reply(
               "Yooo congratulations, you finished! Now use /feed",
             );
