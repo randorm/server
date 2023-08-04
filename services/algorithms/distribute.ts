@@ -143,9 +143,10 @@ export async function distribute(
     kv,
   );
 
+  // TODO(Egor Machnev): Add list of rooms with Participants from google form
   const participantGroups = [
-    ...groupParticipants(maleParticipants),
-    ...groupParticipants(femaleParticipants),
+    ...groupParticipants(maleParticipants, [[]]),
+    ...groupParticipants(femaleParticipants, [[]]),
   ];
 
   const groupIds = new Set<number>();

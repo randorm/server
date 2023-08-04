@@ -294,13 +294,11 @@ composer.command("make_editor", async (ctx: BotContext) => {
         await ctx.reply(`ID: ${args[1]} is not a number`);
         return;
       }
-      
+
       if (userId === ctx.session.userModel.id) {
         await ctx.reply(`You are trying to edit yourself`);
         return;
       }
-
-
 
       const userContext = await createUserContext(
         ctx.state,
