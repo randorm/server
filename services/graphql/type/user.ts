@@ -123,8 +123,6 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
-        assertAuthenticated(context);
-
         const viewedIdsRes = await context.kv.get<Set<number>>([
           "user:viewed_ids",
           id,
@@ -164,8 +162,6 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
-        assertAuthenticated(context);
-
         const subscriptionIdsRes = await context.kv.get<Set<number>>([
           "user:subscription_ids",
           id,
@@ -207,8 +203,6 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
-        assertAuthenticated(context);
-
         const subscriberIdsRes = await context.kv.get<Set<number>>([
           "user:subscriber_ids",
           id,
