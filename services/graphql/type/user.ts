@@ -77,10 +77,6 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
     id: {
       type: new GraphQLNonNull(GraphQLInt),
     },
-    telegramId: {
-      type: new GraphQLNonNull(GraphQLString),
-      resolve: ({ telegramId }) => String(telegramId),
-    },
     username: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -123,6 +119,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
+
         const viewedIdsRes = await context.kv.get<Set<number>>([
           "user:viewed_ids",
           id,
@@ -162,6 +161,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
+
         const subscriptionIdsRes = await context.kv.get<Set<number>>([
           "user:subscription_ids",
           id,
@@ -203,6 +205,9 @@ export const UserNode: Node<UserModel> = new GraphQLObjectType({
         ),
       ),
       async resolve({ id }, _args, context): Promise<UserModel[]> {
+        assertAuthenticated(context);
+        assertOwner(context.user, id);
+
         const subscriberIdsRes = await context.kv.get<Set<number>>([
           "user:subscriber_ids",
           id,
