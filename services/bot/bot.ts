@@ -1,4 +1,4 @@
-import { Composer, InlineKeyboard } from "../../deps.ts";
+import { Composer, GraphQLError, InlineKeyboard } from "../../deps.ts";
 import { DateTimeScalar } from "../../services/graphql/scalar/datetime.ts";
 import type { BotContext } from "../../types.ts";
 import { difference } from "../../utils/iter.ts";
@@ -9,6 +9,7 @@ import {
 import { field } from "../database/operation/field.ts";
 import {
   createUser,
+  makeEditor,
   updateUserProfile,
   user,
   userDistributionsIds,
@@ -25,6 +26,7 @@ import {
   FieldType,
   Gender,
   ProfileModel,
+  Role,
   UserContext,
 } from "./mod.ts";
 import { answer } from "../database/operation/answer.ts";
@@ -91,6 +93,11 @@ composer.command("start", async (ctx: BotContext) => {
       const keyboard = [
         [{ text: "View profile", callback_data: "profile" }],
       ];
+      if (ctx.session.userModel) {
+        ctx.session.userModel = await user(ctx.state, {
+          userId: ctx.session.userModel.id,
+        });
+      }
       const newMessage = await ctx.reply(
         `Hi, hi, hi! Is something wrong?`,
         {
@@ -266,6 +273,58 @@ composer.command("cancel", async (ctx: BotContext) => {
       ctx.chat.id,
       "Done.",
     );
+  }
+});
+
+composer.command("make_editor", async (ctx: BotContext) => {
+  if (ctx.session.userModel) {
+    ctx.session.userModel = await user(ctx.state, {
+      userId: ctx.session.userModel.id,
+    });
+    if (ctx.session.userModel.role === Role.EDITOR) {
+      const args = ctx.message!.text!.split(" ");
+
+      if (args.length !== 2) {
+        await ctx.reply("Nothing has changed. Use: /make_editor <user_id>");
+        return;
+      }
+
+      const userId = parseInt(args[1], 10);
+      if (isNaN(userId)) {
+        await ctx.reply(`ID: ${args[1]} is not a number`);
+        return;
+      }
+
+      if (userId === ctx.session.userModel.id) {
+        await ctx.reply(`You are trying to edit yourself`);
+        return;
+      }
+
+      const userContext = await createUserContext(
+        ctx.state,
+        ctx.session.userModel.id,
+      );
+
+      try {
+        const userM = await user(ctx.state, { userId: userId });
+        if (userM.role === Role.EDITOR) {
+          await ctx.reply(`User with ID ${userM.id} is already EDITOR`);
+          return;
+        }
+        const editedUser = await makeEditor(userContext, { userId: userId });
+        await ctx.api.sendMessage(
+          editedUser.telegramId,
+          `@${ctx.session.userModel.username} changed your role to EDITOR`,
+        );
+        await ctx.reply(
+          `Success! You changed the role of user with ID ${userId} to EDITOR`,
+        );
+      } catch (error) {
+        await ctx.reply(`Failed: ${error.message}`);
+      }
+    } else {
+      await ctx.reply("You are not allowed to do this.");
+    }
   }
 });
 

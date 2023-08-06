@@ -288,6 +288,7 @@ export function distributionByAmount(
 
 function remainingDistribution(
   participants: Record<string, ParticipantNode>,
+  participantsFromForm: ParticipantNode[][],
   // deno-lint-ignore no-explicit-any
 ): any[] {
   let finalRooms = [];
@@ -316,6 +317,43 @@ function remainingDistribution(
   const twoPeopleRooms: any[] = tempRooms[1].slice();
   // deno-lint-ignore no-explicit-any
   const onePeopleRooms: any[] = tempRooms[2].slice();
+
+  for (const room of participantsFromForm) {
+    if (room.length === 4) {
+      finalRooms.push(room.map((node) => node.user.id));
+    } else if (room.length === 3) {
+      const additionalParticipant = onePeopleRooms.pop();
+      if (additionalParticipant) {
+        finalRooms.push([
+          ...room.map((node) => node.user.id),
+          additionalParticipant,
+        ]);
+      } else {
+        finalRooms.push(room.map((node) => node.user.id));
+      }
+    } else if (room.length === 2) {
+      const twoPeopleRoom = twoPeopleRooms.pop();
+      if (twoPeopleRoom) {
+        finalRooms.push([
+          ...room.map((node) => node.user.id),
+          ...twoPeopleRoom,
+        ]);
+      } else {
+        const additionalParticipant1 = onePeopleRooms.pop();
+        const additionalParticipant2 = onePeopleRooms.pop();
+        if (additionalParticipant1 && additionalParticipant2) {
+          finalRooms.push([
+            ...room.map((node) => node.user.id),
+            additionalParticipant1,
+            additionalParticipant2,
+          ]);
+        } else {
+          finalRooms.push(room.map((node) => node.user.id));
+        }
+      }
+    }
+  }
+
   participants = Object.assign({}, participantsOLD);
 
   const idsForDeleting: number[] = [];
@@ -506,13 +544,21 @@ export function fromDataToOutput(
 }
 
 export function groupParticipants(
-  participants: ParticipantNode[],
+  participantsWithSubscribers: ParticipantNode[],
+  participantsFromForm: ParticipantNode[][],
 ): ParticipantNode[][] {
-  const data1: Record<string, ParticipantNode> = fromInputToMap(participants);
-  const data2: number[][] = remainingDistribution(data1);
+  const data1: Record<string, ParticipantNode> = fromInputToMap(
+    participantsWithSubscribers,
+  );
+  const data2: number[][] = remainingDistribution(data1, participantsFromForm);
+  for (const room of participantsFromForm) {
+    for (const participant of room) {
+      participantsWithSubscribers.push(participant);
+    }
+  }
   const data3: ParticipantNode[][] = fromDataToOutput(
     data2,
-    fromInputToMap(participants),
+    fromInputToMap(participantsWithSubscribers),
   );
   return data3;
 }
